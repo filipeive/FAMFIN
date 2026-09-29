@@ -3,7 +3,7 @@
 ## Princípio Fundamental
 
 > Todo valor monetário é armazenado em **centavos** (integer).
-> `100,50 MT` / `100.50 MZN` → `10050` no banco de dados.
+> `R$ 100,50` → `10050` no banco de dados.
 
 ---
 
@@ -16,29 +16,29 @@ dízimo = receita_líquida × (percentual / 100)
 ```
 
 - Percentual configurável (padrão: 10%)
-- Aplicado sobre receita (bruta ou líquida após INSS, configurável)
-- Calculado automaticamente ao registar receita
+- Aplicado sobre receita líquida (após INSS e outros descontos obrigatórios)
+- Calculado automaticamente ao registrar receita
 - Pode ser desativado por família
 
-### 2. INSS (Moçambique)
+### 2. INSS
 
 ```
-inss = salario_bruto × 3%
+inss = salario_bruto × aliquota_faixa
 ```
 
-- Taxa fixa de 3% para o trabalhador (conforme legislação de segurança social de Moçambique)
-- Configurável nas regras da família
-- Calculado automaticamente ao registar receita do tipo salário
+- Tabela progressiva conforme legislação vigente
+- Faixas atualizáveis sem alteração de código
+- Stored em `config/financial/inss_table.php`
 
-### 3. Rendimento / Poupança / Investimento
+### 3. Rendimento
 
 ```
 rendimento_diário = saldo × (taxa_anual / 365)
 ```
 
-- Taxa de juro anual ou taxa fixa configurável
-- Calculado via scheduled job
-- Aplicado em contas de investimento ou poupança
+- CDI, Selic ou taxa fixa configurável
+- Calculado diariamente via scheduled job
+- Aplicado apenas em contas de investimento
 
 ### 4. Orçamento
 

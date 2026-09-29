@@ -112,12 +112,11 @@ FAMFIN/
 ## Convenções
 
 - **Idioma do código**: Inglês
-- **Idioma da UI**: Português (pt_MZ / pt_PT)
+- **Idioma da UI**: Português (pt_BR)
 - **Idioma da documentação**: Português (com termos técnicos em inglês)
-- **Moeda padrão**: MZN (MT / Meticais)
-- **Timezone**: Africa/Maputo
+- **Moeda padrão**: BRL (R$)
+- **Timezone**: America/Sao_Paulo
 - **Formato de data**: dd/mm/yyyy
-- **INSS**: 3% (Moçambique - Segurança Social)
 
 ---
 

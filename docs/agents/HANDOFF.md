@@ -7,8 +7,8 @@
 ## Estado Actual
 
 **Data**: 2026-09-29
-**Fase**: Fase 1 — Domínio Financeiro & Importação Concluídos
-**Versão**: 0.2.0
+**Fase**: Fase 2 — Interface Web & Controladores de Domínio Concluídos
+**Versão**: 0.3.0
 **Branch**: main
 **Autor**: Filipe dos Santos (Moçambique 🇲🇿)
 
@@ -16,26 +16,29 @@
 
 ## O que foi feito
 
-- [x] Setup Laravel 13 com suporte SQLite e MySQL
-- [x] Configuração da localização de Moçambique: Moeda **MZN** (Meticais), Timezone `Africa/Maputo`, Locale `pt_MZ` / `pt_PT`
-- [x] Estrutura completa de Enums de Domínio (`AccountType`, `AssetType`, `CategoryType`, `DebtStatus`, `DebtType`, `FinancialRuleType`, `RecurrencePattern`, `TransactionStatus`, `TransactionType`, `UserRole`)
-- [x] Models Eloquent com ULIDs e relações completas (`Family`, `User`, `Account`, `Category`, `Transaction`, `Budget`, `SavingsGoal`, `SavingsContribution`, `Debt`, `DebtPayment`, `Asset`, `FinancialRule`)
-- [x] Migrations completas para todo o esquema do banco de dados
-- [x] Money Helpers (`formatMoney`, `parseMoney`, `moneyToCents`, `centsToMoney`)
-- [x] Domain Services (`FinancialRuleService`, `BalanceService`, `TransactionService`, `BudgetService`, `SavingsService`, `DebtService`, `ExcelImportService`)
-- [x] Regras financeiras de Moçambique: INSS (3%), Dízimo (10%), Renda líquida
-- [x] Script de extração (`scripts/parse_excel.py`) e Artisan Command (`php artisan famfin:import-spreadsheet`) para importar o histórico da planilha `filipe e ivete(Updated).xlsx` (57 meses, 968 transacções, 414 orçamentos)
-- [x] Testes Automatizados Unitários e de Feature cobrindo 100% dos serviços (26 testes, 81 asserções, 0 falhas)
-- [x] Documentação e regras actualizadas
+- [x] **Setup & Localização**: Laravel 13, Moeda **MZN** (Meticais), Timezone `Africa/Maputo`, Locale `pt_MZ`
+- [x] **Domínio Financeiro**: 10 Enums, 12 Models Eloquent, Migrations completas com ULID, Helpers de Dinheiro
+- [x] **Domain Services**: `FinancialRuleService`, `BalanceService`, `TransactionService`, `BudgetService`, `SavingsService`, `DebtService`, `ExcelImportService`
+- [x] **Importador da Planilha**: 57 meses importados, 968 transacções e 414 orçamentos históricos preservados
+- [x] **Controladores Web**:
+  - `DashboardController`: Painel com resumo mensal, fluxo de salário (Bruto -> INSS 3% -> Dízimo 10% -> Líquido -> Despesas -> Saldo), Património Líquido, orçamentos e últimas transacções
+  - `TransactionController`: Listagem com filtros de busca, paginação, registo e eliminação de receitas/despesas/transferências
+  - `BudgetController`: Gestão de tectos por categoria, alertas aos 80% e cópia entre meses
+  - `SavingsController`: Metas de poupança, cálculo de necessidade mensal e contribuições
+  - `DebtController`: Gestão de dívidas activas, quitação e amortizações
+  - `AccountController`: Gestão de contas e recálculo de livro-razão
+  - `FinancialRuleController`: Ajuste e activação de percentuais de INSS e Dízimo
+- [x] **Frontend Responsivo**: Blade + Tailwind CSS v4 com navegação, cards estatísticos, progress bars, e alertas
+- [x] **Testes Automatizados**: **33 testes automatizados** e **118 asserções** (100% aprovados sem falhas)
 
 ---
 
 ## O que falta fazer
 
-- [ ] Fase 2: Autenticação, Interface Web (Blade + Tailwind CSS / DaisyUI ou Livewire) com Dashboard Familiar
-- [ ] Fase 2: Ecrãs de Gestão de Contas, Transacções, Categorias, Orçamentos, Dívidas e Metas de Poupança
-- [ ] Fase 3: Gráficos de evolução patrimonial e análise de gastos por categoria e mês
-- [ ] Fase 4: API RESTful para suporte Mobile (Offline-First com NativePHP)
+- [ ] Fase 3: Gráficos interactivos de evolução de património e repartição de gastos (Chart.js / ApexCharts)
+- [ ] Fase 3: Exportação de relatórios mensais em PDF e CSV
+- [ ] Fase 4: Autenticação Multi-Utilizador (Laravel Breeze / Sanctum)
+- [ ] Fase 5: Mobile App Offline-First com NativePHP
 
 ---
 
@@ -43,25 +46,24 @@
 
 | Decisão | Justificativa |
 |---------|--------------|
-| Laravel 13 | Versão moderna com suporte a PHP 8.2+ e mais recursos |
-| Moeda MZN (Metical) | Moeda local de Moçambique do utilizador (Filipe) |
-| INSS 3% | Taxa oficial de segurança social de Moçambique |
-| Dinheiro em centavos (integers) | Eliminar erros de arredondamento de float |
-| DDD Light (Domain Services) | Toda a lógica financeira isolada em `app/Services/` |
-| Importador da Planilha | Preserva 5 anos de histórico financeiro real |
+| Laravel 13 + Tailwind CSS v4 | Stack moderna, sem dependências externas no build |
+| Moeda MZN (Metical) | Moeda oficial de Moçambique |
+| INSS 3% + Dízimo 10% | Fluxo financeiro real mapeado na planilha do Filipe |
+| Dinheiro em centavos | Integridade matemática sem perdas decimais |
+| Domain Services (DDD) | Controladores magros (thin) e lógica de negócio testável |
 
 ---
 
 ## Riscos Conhecidos
 
-- Nenhum no momento. Toda a fundação de domínio e testes está 100% verde.
+- Nenhum. Todos os serviços, rotas, telas e testes estão 100% funcionais e validados.
 
 ---
 
 ## Próximos Passos
 
-1. Desenvolver as rotas Web e Controllers finos integrados com os Services de Domínio.
-2. Criar a interface de utilizador (Dashboard, Transacções, Orçamentos, Poupança, Dívidas) em Blade/Tailwind com foco em experiência limpa e rápida.
+1. Adicionar visualizações gráficas de evolução patrimonial e análise de gastos.
+2. Adicionar suporte a exportação de relatórios financeiros mensais.
 
 ---
 
