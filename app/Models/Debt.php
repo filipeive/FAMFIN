@@ -17,10 +17,12 @@ class Debt extends Model
     protected $fillable = [
         'family_id',
         'person_name',
+        'creditor',
         'type',
         'description',
         'original_amount',
         'remaining_amount',
+        'monthly_payment',
         'interest_rate',
         'interest_type',
         'start_date',

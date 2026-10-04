@@ -92,15 +92,59 @@ class DebtService
         $totalPaid = (int) DebtPayment::whereIn('debt_id', $family->debts()->pluck('id'))->sum('amount');
         $progress = $totalOriginal > 0 ? round(($totalPaid / $totalOriginal) * 100, 1) : 0.0;
 
+        $overdueCount = $family->debts()
+            ->where('status', DebtStatus::Overdue)
+            ->count();
+
         return [
             'total_original' => $totalOriginal,
             'total_remaining' => $totalRemaining,
             'total_paid' => $totalPaid,
             'progress_percentage' => $progress,
             'active_debts_count' => $activeDebts->count(),
+            'overdue_count' => $overdueCount,
             'formatted_total_original' => formatMoney($totalOriginal, $currency),
             'formatted_total_remaining' => formatMoney($totalRemaining, $currency),
             'formatted_total_paid' => formatMoney($totalPaid, $currency),
         ];
+    }
+
+    /**
+     * Delete a debt and all its payments.
+     *
+     * @param Debt $debt
+     * @return void
+     */
+    public function deleteDebt(Debt $debt): void
+    {
+        DB::transaction(function () use ($debt) {
+            $debt->payments()->delete();
+            $debt->delete();
+        });
+    }
+
+    /**
+     * Delete a debt payment and revert the remaining amount on the debt.
+     *
+     * @param DebtPayment $payment
+     * @return void
+     */
+    public function deletePayment(DebtPayment $payment): void
+    {
+        DB::transaction(function () use ($payment) {
+            $debt = $payment->debt;
+            if ($debt) {
+                $newRemaining = $debt->remaining_amount + $payment->amount;
+                $newStatus = ($debt->due_date && $debt->due_date->isPast() && $newRemaining > 0)
+                    ? DebtStatus::Overdue
+                    : DebtStatus::Active;
+
+                $debt->update([
+                    'remaining_amount' => $newRemaining,
+                    'status' => $newStatus,
+                ]);
+            }
+            $payment->delete();
+        });
     }
 }

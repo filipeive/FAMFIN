@@ -2,101 +2,119 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TransactionStatus;
+use App\Enums\TransactionType;
 use App\Models\Family;
 use App\Models\Transaction;
 use App\Services\BalanceService;
 use App\Services\BudgetService;
 use App\Services\DebtService;
-use App\Services\FinancialRuleService;
+use App\Services\FinancialHealthService;
+use App\Services\NotificationService;
+use App\Services\SavingsService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
+use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
     public function __construct(
         protected BalanceService $balanceService,
         protected BudgetService $budgetService,
-        protected FinancialRuleService $ruleService,
-        protected DebtService $debtService
+        protected SavingsService $savingsService,
+        protected DebtService $debtService,
+        protected FinancialHealthService $financialHealthService,
+        protected NotificationService $notificationService
     ) {}
 
-    public function index(Request $request)
+    public function index(Request $request): View
     {
-        $family = Family::with(['accounts', 'categories', 'financialRules'])->first();
-        if (!$family) {
-            abort(404, 'Nenhuma família configurada. Execute o seeder do banco de dados.');
-        }
-
-        // Determine active month (default: latest transaction month or current month)
-        $latestTransDate = Transaction::latest('transaction_date')->value('transaction_date');
-        $defaultMonth = $latestTransDate ? Carbon::parse($latestTransDate)->format('Y-m') : now()->format('Y-m');
-        $month = $request->get('month', $defaultMonth);
-
-        // 1. Month dates
-        $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
-        $endOfMonth = Carbon::createFromFormat('Y-m', $month)->endOfMonth();
-
-        // 2. Net Worth
-        $netWorth = $this->balanceService->getFamilyNetWorth($family);
-
-        // 3. Month Incomes & Expenses
-        $monthIncomes = (int) Transaction::whereHas('account', fn ($q) => $q->where('family_id', $family->id))
-            ->incomes()
-            ->completed()
-            ->forMonth($month)
-            ->sum('amount');
-
-        $monthExpenses = (int) Transaction::whereHas('account', fn ($q) => $q->where('family_id', $family->id))
-            ->expenses()
-            ->completed()
-            ->forMonth($month)
-            ->sum('amount');
-
-        // 4. Financial Rules Breakdown on Month Income
-        $incomeBreakdown = $this->ruleService->calculateBreakdown($family, $monthIncomes);
-
-        // 5. Monthly Budget Overview
-        $budgetOverview = $this->budgetService->getFamilyMonthlyBudgetOverview($family, $month);
-
-        // 6. Debts Summary
-        $debtSummary = $this->debtService->getFamilyDebtSummary($family);
-
-        // 7. Recent Transactions for the month
-        $recentTransactions = Transaction::with(['category', 'account', 'transferAccount'])
-            ->whereHas('account', fn ($q) => $q->where('family_id', $family->id))
-            ->forMonth($month)
-            ->orderBy('transaction_date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->take(10)
-            ->get();
-
-        // 8. Available months in system for selector
-        $availableMonths = Transaction::selectRaw("DISTINCT SUBSTR(transaction_date, 1, 7) as m")
-            ->orderBy('m', 'desc')
-            ->pluck('m')
-            ->filter()
-            ->toArray();
-
-        if (empty($availableMonths)) {
-            $availableMonths = [$month];
-        }
+        $family = auth()->user()?->family ?? Family::first() ?? Family::create([
+            'name' => 'Família Filipe dos Santos',
+            'currency' => 'MZN',
+            'locale' => 'pt_MZ',
+            'timezone' => 'Africa/Maputo',
+        ]);
 
         $currency = $family->currency ?? 'MZN';
-        $monthBalance = $monthIncomes - $monthExpenses;
 
-        return view('dashboard', compact(
-            'family',
-            'month',
-            'netWorth',
-            'monthIncomes',
-            'monthExpenses',
-            'monthBalance',
-            'incomeBreakdown',
-            'budgetOverview',
-            'debtSummary',
-            'recentTransactions',
-            'availableMonths',
-            'currency'
-        ));
+        $availableMonths = Transaction::when($family, function ($q) use ($family) {
+            $q->whereHas('account', fn ($sq) => $sq->where('family_id', $family->id));
+        })
+            ->selectRaw("SUBSTR(transaction_date, 1, 7) as month_val")
+            ->distinct()
+            ->orderBy('month_val', 'desc')
+            ->pluck('month_val')
+            ->toArray();
+
+        $currentMonth = $request->query('month');
+        if (!$currentMonth || !in_array($currentMonth, $availableMonths)) {
+            $currentMonth = !empty($availableMonths) ? $availableMonths[0] : Carbon::now()->format('Y-m');
+        }
+
+        if (!in_array($currentMonth, $availableMonths)) {
+            array_unshift($availableMonths, $currentMonth);
+        }
+
+        // Net worth
+        $netWorth = $this->balanceService->getFamilyNetWorth($family);
+
+        // Monthly Totals
+        $monthlyIncome = (int) Transaction::whereHas('account', fn ($q) => $q->where('family_id', $family->id))
+            ->where('type', TransactionType::Income)
+            ->where('status', TransactionStatus::Completed)
+            ->forMonth($currentMonth)
+            ->sum('amount');
+
+        $monthlyExpense = (int) Transaction::whereHas('account', fn ($q) => $q->where('family_id', $family->id))
+            ->where('type', TransactionType::Expense)
+            ->where('status', TransactionStatus::Completed)
+            ->forMonth($currentMonth)
+            ->sum('amount');
+
+        $monthlyBalance = $monthlyIncome - $monthlyExpense;
+
+        // Budgets
+        $budgetOverview = $this->budgetService->getFamilyMonthlyBudgetOverview($family, $currentMonth);
+
+        // Savings & Debts
+        $savingsSummary = $this->savingsService->getFamilySavingsSummary($family);
+        $rawGoals = \App\Models\SavingsGoal::where('family_id', $family->id)->get();
+        $savingsGoals = $rawGoals->map(fn ($g) => $this->savingsService->getGoalProgress($g))->toArray();
+        $debtSummary = $this->debtService->getFamilyDebtSummary($family);
+
+        // Health Score & Alerts
+        $healthReport = $this->financialHealthService->getDiagnosticReport($family, $currentMonth);
+        $alerts = $this->notificationService->getActiveAlerts($family, $currentMonth);
+
+        // Recent Transactions
+        $recentTransactions = Transaction::whereHas('account', fn ($q) => $q->where('family_id', $family->id))
+            ->with(['account', 'category', 'transferAccount'])
+            ->latest('transaction_date')
+            ->latest('id')
+            ->take(8)
+            ->get();
+
+        return view('dashboard', [
+            'family' => $family,
+            'currency' => $currency,
+            'currentMonth' => $currentMonth,
+            'availableMonths' => $availableMonths,
+            'netWorth' => $netWorth,
+            'monthlyIncome' => $monthlyIncome,
+            'monthlyExpense' => $monthlyExpense,
+            'monthlyBalance' => $monthlyBalance,
+            'monthlyNet' => $monthlyBalance,
+            'formattedMonthlyIncome' => formatMoney($monthlyIncome, $currency),
+            'formattedMonthlyExpense' => formatMoney($monthlyExpense, $currency),
+            'formattedMonthlyBalance' => formatMoney($monthlyBalance, $currency),
+            'budgetOverview' => $budgetOverview,
+            'savingsSummary' => $savingsSummary,
+            'savingsGoals' => $savingsGoals,
+            'debtSummary' => $debtSummary,
+            'healthReport' => $healthReport,
+            'alerts' => $alerts,
+            'recentTransactions' => $recentTransactions,
+        ]);
     }
 }

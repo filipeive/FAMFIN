@@ -79,6 +79,7 @@ class BudgetService
         $currency = $family->currency ?? 'MZN';
 
         return [
+            'budget_id' => $budget?->id,
             'category_id' => $categoryId,
             'category_name' => $category?->name,
             'category_icon' => $category?->icon,

@@ -40,7 +40,9 @@ class ExcelImportService
         $account = $account ?? $family->accounts()->first();
 
         // Extract JSON from python parser
-        $pythonBinary = file_exists('/tmp/famfin_venv/bin/python3') ? '/tmp/famfin_venv/bin/python3' : 'python3';
+        $pythonBinary = file_exists(base_path('.venv/bin/python3'))
+            ? base_path('.venv/bin/python3')
+            : (file_exists('/tmp/famfin_venv/bin/python3') ? '/tmp/famfin_venv/bin/python3' : 'python3');
         $scriptPath = base_path('scripts/parse_excel.py');
 
         $process = new Process([$pythonBinary, $scriptPath, $excelFilePath]);

@@ -29,7 +29,7 @@ return new class extends Migration
 
             $table->foreign('account_id')->references('id')->on('accounts')->cascadeOnDelete();
             $table->foreign('category_id')->references('id')->on('categories')->nullOnDelete();
-            $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
             $table->foreign('transfer_account_id')->references('id')->on('accounts')->nullOnDelete();
             $table->foreign('parent_transaction_id')->references('id')->on('transactions')->nullOnDelete();
 

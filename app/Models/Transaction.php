@@ -94,8 +94,9 @@ class Transaction extends Model
 
     public function scopeForMonth($query, string $month)
     {
-        $start = \Illuminate\Support\Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
-        $end = \Illuminate\Support\Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
+        $start = \Carbon\Carbon::parse($month . '-01')->startOfMonth()->toDateString();
+        $end = \Carbon\Carbon::parse($month . '-01')->endOfMonth()->toDateString();
+
         return $query->whereBetween('transaction_date', [$start, $end]);
     }
 

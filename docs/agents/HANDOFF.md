@@ -1,44 +1,32 @@
 # FAMFIN — Handoff
 
-> **Estado actual do projecto para continuidade de trabalho.**
+> **Estado atual do projeto para continuidade de trabalho.**
 
 ---
 
-## Estado Actual
+## Estado Atual
 
-**Data**: 2026-09-29
-**Fase**: Fase 2 — Interface Web & Controladores de Domínio Concluídos
-**Versão**: 0.3.0
+**Data**: 2026-10-04
+**Fase**: Fase 5 Concluída (Saúde Financeira, Notificações, CRUDs Completos, Layout Full-Width, SweetAlert2)
+**Versão**: 0.5.0
 **Branch**: main
-**Autor**: Filipe dos Santos (Moçambique 🇲🇿)
+**Testes**: 54 testes / 264 asserções (100% de aprovação)
 
 ---
 
 ## O que foi feito
 
-- [x] **Setup & Localização**: Laravel 13, Moeda **MZN** (Meticais), Timezone `Africa/Maputo`, Locale `pt_MZ`
-- [x] **Domínio Financeiro**: 10 Enums, 12 Models Eloquent, Migrations completas com ULID, Helpers de Dinheiro
-- [x] **Domain Services**: `FinancialRuleService`, `BalanceService`, `TransactionService`, `BudgetService`, `SavingsService`, `DebtService`, `ExcelImportService`
-- [x] **Importador da Planilha**: 57 meses importados, 968 transacções e 414 orçamentos históricos preservados
-- [x] **Controladores Web**:
-  - `DashboardController`: Painel com resumo mensal, fluxo de salário (Bruto -> INSS 3% -> Dízimo 10% -> Líquido -> Despesas -> Saldo), Património Líquido, orçamentos e últimas transacções
-  - `TransactionController`: Listagem com filtros de busca, paginação, registo e eliminação de receitas/despesas/transferências
-  - `BudgetController`: Gestão de tectos por categoria, alertas aos 80% e cópia entre meses
-  - `SavingsController`: Metas de poupança, cálculo de necessidade mensal e contribuições
-  - `DebtController`: Gestão de dívidas activas, quitação e amortizações
-  - `AccountController`: Gestão de contas e recálculo de livro-razão
-  - `FinancialRuleController`: Ajuste e activação de percentuais de INSS e Dízimo
-- [x] **Frontend Responsivo**: Blade + Tailwind CSS v4 com navegação, cards estatísticos, progress bars, e alertas
-- [x] **Testes Automatizados**: **33 testes automatizados** e **118 asserções** (100% aprovados sem falhas)
-
----
-
-## O que falta fazer
-
-- [ ] Fase 3: Gráficos interactivos de evolução de património e repartição de gastos (Chart.js / ApexCharts)
-- [ ] Fase 3: Exportação de relatórios mensais em PDF e CSV
-- [ ] Fase 4: Autenticação Multi-Utilizador (Laravel Breeze / Sanctum)
-- [ ] Fase 5: Mobile App Offline-First com NativePHP
+- [x] Setup Laravel 13 e migrações de dados SQLite / MySQL
+- [x] Modelos de domínio completos (Family, User, Account, Transaction, Category, Budget, SavingsGoal, SavingsContribution, Debt, DebtPayment, Asset, FinancialRule)
+- [x] Serviços financeiros com cálculo em centavos (BalanceService, TransactionService, BudgetService, SavingsService, DebtService, FinancialRuleService, FinancialHealthService, NotificationService, ReportService, ExcelImportService)
+- [x] Dashboard dinâmico integrado com seleção de período histórico e cartões de património, receitas, despesas e saldo operacional
+- [x] Transações: CRUD completo, paginação, filtros por tipo/conta/categoria/período/busca textual e eliminação em massa (Bulk Delete) com recálculo atómico de saldos
+- [x] Contas bancárias, Bens & Imóveis (Património), Dívidas e Metas de Poupança com formulários modais e edição/remoção
+- [x] Layout escuro (slate-950/slate-900) 100% full-width sem limitação de largura no painel direito
+- [x] Navbar espaçada com navegação clara, atalho de perfil e botão de terminar sessão com confirmação interativa
+- [x] Integração SweetAlert2 com tema escuro (toasts para feedback de sessão e caixas de diálogo modais para confirmações de remoção e logout)
+- [x] Autenticação com sessão persistente e suporte a navegação livre em modo desenvolvimento
+- [x] Importação histórica de 57 meses de dados a partir de planilha Excel
 
 ---
 
@@ -46,25 +34,16 @@
 
 | Decisão | Justificativa |
 |---------|--------------|
-| Laravel 13 + Tailwind CSS v4 | Stack moderna, sem dependências externas no build |
-| Moeda MZN (Metical) | Moeda oficial de Moçambique |
-| INSS 3% + Dízimo 10% | Fluxo financeiro real mapeado na planilha do Filipe |
-| Dinheiro em centavos | Integridade matemática sem perdas decimais |
-| Domain Services (DDD) | Controladores magros (thin) e lógica de negócio testável |
+| Layout Full-Width | Removido `max-w-7xl` do `<main>` para permitir que o conteúdo ocupe toda a área visível do ecrã |
+| SweetAlert2 Escuro | Alertas e toasts estilizados em dark mode (`#0f172a`/`#1e293b`), substituindo diálogos nativos do browser |
+| Dinheiro em centavos | Valores monetários inteiros garantem precisão matemática em todas as agregações financeiras |
+| SoftDeletes em Transações | Permite recuperação e histórico sem perda acidental de dados |
+| Ambientes Python Isolados | `.venv` com `openpyxl` local no projeto para execução de parsers de folha de cálculo |
 
 ---
 
-## Riscos Conhecidos
+## Suíte de Testes
 
-- Nenhum. Todos os serviços, rotas, telas e testes estão 100% funcionais e validados.
-
----
-
-## Próximos Passos
-
-1. Adicionar visualizações gráficas de evolução patrimonial e análise de gastos.
-2. Adicionar suporte a exportação de relatórios financeiros mensais.
-
----
-
-*Última actualização: 2026-09-29*
+- 54 testes executados com `php artisan test`
+- 264 asserções validadas com sucesso
+- Cobertura de transações, orçamentos, saúde financeira, dívidas, poupanças, relatórios, importação e eliminação em massa

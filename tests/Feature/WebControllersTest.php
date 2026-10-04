@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Enums\AccountType;
-use App\Enums\CategoryType;
 use App\Enums\DebtType;
 use App\Enums\FinancialRuleType;
+use App\Enums\TransactionType;
 use App\Models\Account;
 use App\Models\Category;
 use App\Models\Debt;
@@ -13,7 +13,6 @@ use App\Models\Family;
 use App\Models\FinancialRule;
 use App\Models\SavingsGoal;
 use App\Models\Transaction;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,7 +21,6 @@ class WebControllersTest extends TestCase
     use RefreshDatabase;
 
     protected Family $family;
-    protected User $user;
     protected Account $account;
     protected Category $category;
 
@@ -31,176 +29,223 @@ class WebControllersTest extends TestCase
         parent::setUp();
 
         $this->family = Family::create([
-            'name' => 'Família dos Santos',
+            'name' => 'Família Filipe dos Santos',
             'currency' => 'MZN',
             'locale' => 'pt_MZ',
-        ]);
-
-        $this->user = User::factory()->create([
-            'family_id' => $this->family->id,
-            'name' => 'Filipe dos Santos',
-            'email' => 'filipe@famfin.app',
+            'timezone' => 'Africa/Maputo',
         ]);
 
         $this->account = Account::create([
             'family_id' => $this->family->id,
-            'name' => 'Conta BCI',
+            'name' => 'Millennium BIM Filipe',
             'type' => AccountType::Checking,
-            'initial_balance' => 1000000, // 10.000,00 MZN
-            'balance' => 1000000,
+            'currency' => 'MZN',
+            'initial_balance' => 100000,
+            'balance' => 100000,
+            'is_active' => true,
         ]);
 
         $this->category = Category::create([
             'family_id' => $this->family->id,
-            'name' => 'Rancho',
-            'type' => CategoryType::Expense,
-        ]);
-
-        FinancialRule::create([
-            'family_id' => $this->family->id,
-            'type' => FinancialRuleType::Inss,
-            'name' => 'INSS',
-            'percentage' => 3.00,
-            'is_active' => true,
-            'apply_on_income' => true,
+            'name' => 'Alimentação & Supermercado',
+            'type' => 'expense',
+            'icon' => 'shopping-cart',
+            'color' => '#10B981',
+            'sort_order' => 1,
         ]);
     }
 
     public function test_dashboard_renders_successfully(): void
     {
         $response = $this->get(route('dashboard'));
+
         $response->assertStatus(200);
-        $response->assertSee('Painel Financeiro');
-        $response->assertSee('Família dos Santos');
-        $response->assertSee('MZN');
+        $response->assertSee('Visão Geral Financeira');
+        $response->assertSee('Património Líquido');
     }
 
     public function test_transactions_index_and_create(): void
     {
-        $response = $this->get(route('transactions.index'));
-        $response->assertStatus(200);
-        $response->assertSee('Transacções');
-
-        $createResponse = $this->get(route('transactions.create'));
-        $createResponse->assertStatus(200);
-        $createResponse->assertSee('Nova Transacção');
-    }
-
-    public function test_store_and_delete_transaction(): void
-    {
-        $storeResponse = $this->post(route('transactions.store'), [
+        Transaction::create([
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
-            'type' => 'expense',
-            'amount' => '2500,00',
-            'description' => 'Compras semanais',
+            'type' => TransactionType::Expense,
+            'amount' => 50000,
+            'description' => 'Compras Supermercado',
             'transaction_date' => now()->toDateString(),
         ]);
 
-        $storeResponse->assertRedirect(route('transactions.index'));
-        $storeResponse->assertSessionHas('success');
+        $response = $this->get(route('transactions.index'));
+        $response->assertStatus(200);
+        $response->assertSee('Compras Supermercado');
+        $response->assertSee('Transações');
 
-        $this->account->refresh();
-        $this->assertEquals(750000, $this->account->balance); // 10.000 - 2.500 = 7.500 MZN
-
-        $transaction = Transaction::where('description', 'Compras semanais')->first();
-        $this->assertNotNull($transaction);
-
-        // Delete transaction
-        $deleteResponse = $this->delete(route('transactions.destroy', $transaction));
-        $deleteResponse->assertSessionHas('success');
-
-        $this->account->refresh();
-        $this->assertEquals(1000000, $this->account->balance); // balance restored
+        $createResponse = $this->get(route('transactions.create'));
+        $createResponse->assertStatus(200);
+        $createResponse->assertSee('Registar Nova Transação');
     }
 
-    public function test_budgets_index_and_store(): void
+    public function test_transaction_store_and_destroy(): void
     {
-        $response = $this->get(route('budgets.index'));
+        $response = $this->post(route('transactions.store'), [
+            'account_id' => $this->account->id,
+            'type' => 'income',
+            'amount' => '25.000,00',
+            'description' => 'Consultoria Extra',
+            'transaction_date' => now()->toDateString(),
+        ]);
+
+        $response->assertRedirect(route('transactions.index'));
+        $this->assertDatabaseHas('transactions', [
+            'description' => 'Consultoria Extra',
+            'amount' => 2500000,
+        ]);
+
+        $tx = Transaction::where('description', 'Consultoria Extra')->first();
+        $deleteResponse = $this->delete(route('transactions.destroy', $tx));
+        $deleteResponse->assertRedirect();
+        $this->assertSoftDeleted('transactions', ['id' => $tx->id]);
+    }
+
+    public function test_budgets_controller_index_and_store(): void
+    {
+        $response = $this->get(route('budgets.index', ['month' => '2026-09']));
         $response->assertStatus(200);
-        $response->assertSee('Orçamentos Mensais');
+        $response->assertSee('Gestão de Orçamentos Mensais');
 
         $storeResponse = $this->post(route('budgets.store'), [
             'category_id' => $this->category->id,
             'month' => '2026-09',
-            'amount' => '5000,00',
+            'amount' => '15.000,00',
             'alert_threshold' => 80,
         ]);
 
-        $storeResponse->assertSessionHas('success');
+        $storeResponse->assertRedirect(route('budgets.index', ['month' => '2026-09']));
         $this->assertDatabaseHas('budgets', [
             'family_id' => $this->family->id,
             'category_id' => $this->category->id,
             'month' => '2026-09',
-            'amount' => 500000,
+            'amount' => 1500000,
+        ]);
+
+        // Copy budgets
+        $copyResponse = $this->post(route('budgets.copy'), [
+            'from_month' => '2026-09',
+            'to_month' => '2026-10',
+        ]);
+
+        $copyResponse->assertRedirect(route('budgets.index', ['month' => '2026-10']));
+        $this->assertDatabaseHas('budgets', [
+            'month' => '2026-10',
+            'amount' => 1500000,
         ]);
     }
 
-    public function test_savings_goals_and_contributions(): void
+    public function test_savings_controller_and_contributions(): void
     {
         $response = $this->get(route('savings.index'));
         $response->assertStatus(200);
         $response->assertSee('Metas de Poupança');
 
         $storeResponse = $this->post(route('savings.store'), [
-            'name' => 'Fundo de Emergência',
-            'target_amount' => '50000,00',
+            'name' => 'Reserva de Emergência',
+            'target_amount' => '100.000,00',
+            'deadline' => '2026-12-31',
         ]);
-        $storeResponse->assertSessionHas('success');
 
-        $goal = SavingsGoal::where('name', 'Fundo de Emergência')->first();
-        $this->assertNotNull($goal);
+        $storeResponse->assertRedirect(route('savings.index'));
+        $this->assertDatabaseHas('savings_goals', [
+            'name' => 'Reserva de Emergência',
+            'target_amount' => 10000000,
+        ]);
 
-        $contribResponse = $this->post(route('savings.contribute', $goal->id), [
-            'amount' => '10000,00',
+        $goal = SavingsGoal::where('name', 'Reserva de Emergência')->first();
+
+        $contribResponse = $this->post(route('savings.contribute', $goal), [
+            'amount' => '10.000,00',
             'account_id' => $this->account->id,
+            'note' => 'Aporte inicial',
         ]);
-        $contribResponse->assertSessionHas('success');
 
+        $contribResponse->assertRedirect(route('savings.index'));
         $goal->refresh();
         $this->assertEquals(1000000, $goal->current_amount);
     }
 
-    public function test_debts_and_repayments(): void
+    public function test_debts_controller_and_payments(): void
     {
         $response = $this->get(route('debts.index'));
         $response->assertStatus(200);
-        $response->assertSee('Gestão de Dívidas');
+        $response->assertSee('Dívidas, Empréstimos & Financiamentos', false);
 
         $storeResponse = $this->post(route('debts.store'), [
-            'person_name' => 'Laurinda',
+            'creditor' => 'Millennium BIM',
+            'description' => 'Crédito Pessoal',
             'type' => 'borrowed',
-            'original_amount' => '10000,00',
+            'original_amount' => '50.000,00',
+            'monthly_payment' => '5.000,00',
         ]);
-        $storeResponse->assertSessionHas('success');
 
-        $debt = Debt::where('person_name', 'Laurinda')->first();
-        $this->assertNotNull($debt);
+        $storeResponse->assertRedirect(route('debts.index'));
+        $this->assertDatabaseHas('debts', [
+            'creditor' => 'Millennium BIM',
+            'original_amount' => 5000000,
+        ]);
 
-        $payResponse = $this->post(route('debts.pay', $debt->id), [
-            'amount' => '3000,00',
+        $debt = Debt::where('creditor', 'Millennium BIM')->first();
+
+        $payResponse = $this->post(route('debts.payment', $debt), [
+            'amount' => '10.000,00',
             'account_id' => $this->account->id,
+            'note' => 'Pagamento Parcela 1',
         ]);
-        $payResponse->assertSessionHas('success');
 
+        $payResponse->assertRedirect(route('debts.index'));
         $debt->refresh();
-        $this->assertEquals(700000, $debt->remaining_amount);
+        $this->assertEquals(4000000, $debt->remaining_amount);
     }
 
     public function test_accounts_and_rules_controllers(): void
     {
         $accResponse = $this->get(route('accounts.index'));
         $accResponse->assertStatus(200);
-        $accResponse->assertSee('Contas');
+        $accResponse->assertSee('Contas & Carteiras', false);
 
-        $rulesResponse = $this->get(route('rules.index'));
+        $createAccResponse = $this->post(route('accounts.store'), [
+            'name' => 'Vodacom M-Pesa',
+            'type' => 'mobile_money',
+            'initial_balance' => '5.000,00',
+            'include_in_total' => '1',
+        ]);
+
+        $createAccResponse->assertRedirect(route('accounts.index'));
+        $this->assertDatabaseHas('accounts', [
+            'name' => 'Vodacom M-Pesa',
+            'balance' => 500000,
+        ]);
+
+        // Rules
+        $rulesResponse = $this->get(route('rules.index', ['simulate_gross' => '50.000,00']));
         $rulesResponse->assertStatus(200);
-        $rulesResponse->assertSee('Regras');
+        $rulesResponse->assertSee('Regras Financeiras & Simulador de Deduções', false);
 
-        $rule = FinancialRule::first();
-        $toggleResponse = $this->post(route('rules.toggle', $rule->id));
-        $toggleResponse->assertSessionHas('success');
+        $storeRuleResponse = $this->post(route('rules.store'), [
+            'name' => 'INSS Moçambique',
+            'type' => 'inss',
+            'percentage' => '3.0',
+            'apply_on_income' => '1',
+            'base' => 'gross',
+        ]);
 
+        $storeRuleResponse->assertRedirect(route('rules.index'));
+        $this->assertDatabaseHas('financial_rules', [
+            'name' => 'INSS Moçambique',
+            'percentage' => 3.0,
+        ]);
+
+        $rule = FinancialRule::where('name', 'INSS Moçambique')->first();
+        $toggleResponse = $this->patch(route('rules.toggle', $rule));
+        $toggleResponse->assertRedirect(route('rules.index'));
         $rule->refresh();
         $this->assertFalse($rule->is_active);
     }

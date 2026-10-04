@@ -118,6 +118,27 @@ class TransactionService
     }
 
     /**
+     * Delete multiple transactions and revert their balance effects.
+     *
+     * @param array $transactionIds
+     * @return int Count of deleted transactions
+     */
+    public function bulkDeleteTransactions(array $transactionIds): int
+    {
+        return DB::transaction(function () use ($transactionIds) {
+            $transactions = Transaction::whereIn('id', $transactionIds)->get();
+            $count = 0;
+            foreach ($transactions as $transaction) {
+                $this->revertBalanceEffect($transaction);
+                if ($transaction->delete()) {
+                    $count++;
+                }
+            }
+            return $count;
+        });
+    }
+
+    /**
      * Apply balance effect for a completed transaction.
      */
     protected function applyBalanceEffect(Transaction $transaction): void

@@ -29,6 +29,11 @@ class SavingsContribution extends Model
         return $this->belongsTo(SavingsGoal::class);
     }
 
+    public function goal(): BelongsTo
+    {
+        return $this->savingsGoal();
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

@@ -6,7 +6,9 @@ use App\Enums\AccountType;
 use App\Models\Account;
 use App\Models\Family;
 use App\Services\BalanceService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class AccountController extends Controller
 {
@@ -14,51 +16,128 @@ class AccountController extends Controller
         protected BalanceService $balanceService
     ) {}
 
-    public function index()
+    public function index(): View
     {
-        $family = Family::with('accounts')->firstOrFail();
-        $accounts = $family->accounts()->get();
-        $netWorth = $this->balanceService->getFamilyNetWorth($family);
+        $family = Family::first() ?? Family::create([
+            'name' => 'Família Filipe dos Santos',
+            'currency' => 'MZN',
+            'locale' => 'pt_MZ',
+            'timezone' => 'Africa/Maputo',
+        ]);
 
-        return view('accounts.index', compact('family', 'accounts', 'netWorth'));
+        $accounts = Account::where('family_id', $family->id)
+            ->withCount('transactions')
+            ->orderBy('is_active', 'desc')
+            ->orderBy('name')
+            ->get();
+
+        $totalBalance = (int) $accounts->where('is_active', true)->where('include_in_total', true)->sum('balance');
+
+        return view('accounts.index', [
+            'family' => $family,
+            'accounts' => $accounts,
+            'totalBalance' => $totalBalance,
+            'formattedTotalBalance' => formatMoney($totalBalance, $family->currency),
+            'accountTypes' => AccountType::cases(),
+        ]);
     }
 
-    public function store(Request $request)
+    public function show(Account $account): View
     {
-        $family = Family::firstOrFail();
+        $account->loadMissing('family');
+        $transactions = $account->transactions()
+            ->with(['category', 'transferAccount'])
+            ->latest('transaction_date')
+            ->latest('id')
+            ->paginate(30);
 
+        return view('accounts.show', [
+            'account' => $account,
+            'transactions' => $transactions,
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|string',
-            'initial_balance' => 'required',
-            'description' => 'nullable|string',
-            'color' => 'nullable|string',
-            'icon' => 'nullable|string',
+            'type' => 'required|in:checking,savings,cash,investment,credit_card,mobile_money,other',
+            'initial_balance' => 'nullable',
+            'bank_name' => 'nullable|string|max:255',
+            'account_number' => 'nullable|string|max:50',
             'include_in_total' => 'nullable|boolean',
         ]);
 
-        $initial = parseMoney($validated['initial_balance']);
+        $family = Family::first();
+        $initialBalanceCentavos = !empty($validated['initial_balance']) ? parseMoney($validated['initial_balance']) : 0;
 
-        $account = Account::create([
+        Account::create([
             'family_id' => $family->id,
             'name' => $validated['name'],
-            'type' => AccountType::from($validated['type']),
-            'initial_balance' => $initial,
-            'balance' => $initial,
-            'description' => $validated['description'] ?? null,
-            'color' => $validated['color'] ?? '#3B82F6',
-            'icon' => $validated['icon'] ?? '🏦',
+            'type' => $validated['type'],
+            'currency' => $family->currency ?? 'MZN',
+            'initial_balance' => $initialBalanceCentavos,
+            'balance' => $initialBalanceCentavos,
+            'bank_name' => $validated['bank_name'] ?? null,
+            'account_number' => $validated['account_number'] ?? null,
+            'include_in_total' => $request->boolean('include_in_total', true),
             'is_active' => true,
-            'include_in_total' => $request->has('include_in_total'),
         ]);
 
-        return back()->with('success', 'Conta criada com sucesso!');
+        return redirect()->route('accounts.index')->with('success', 'Conta criada com sucesso!');
     }
 
-    public function recalculate(Account $account)
+    public function edit(Account $account): View
     {
-        $newBalance = $this->balanceService->recalculateAccountBalance($account);
+        return view('accounts.edit', [
+            'account' => $account,
+            'accountTypes' => AccountType::cases(),
+        ]);
+    }
 
-        return back()->with('success', 'Saldo recalculado com sucesso: ' . formatMoney($newBalance));
+    public function update(Request $request, Account $account): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'required|in:checking,savings,cash,investment,credit_card,mobile_money,other',
+            'bank_name' => 'nullable|string|max:255',
+            'account_number' => 'nullable|string|max:50',
+            'include_in_total' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        $account->update([
+            'name' => $validated['name'],
+            'type' => $validated['type'],
+            'bank_name' => $validated['bank_name'] ?? null,
+            'account_number' => $validated['account_number'] ?? null,
+            'include_in_total' => $request->boolean('include_in_total', true),
+            'is_active' => $request->boolean('is_active', true),
+        ]);
+
+        return redirect()->route('accounts.index')->with('success', 'Conta atualizada com sucesso!');
+    }
+
+    public function destroy(Account $account): RedirectResponse
+    {
+        if ($account->transactions()->exists()) {
+            return redirect()->back()->withErrors([
+                'error' => 'Não é possível eliminar uma conta com transações associadas. Pode desativá-la nas definições.',
+            ]);
+        }
+
+        $account->delete();
+
+        return redirect()->route('accounts.index')->with('success', 'Conta eliminada com sucesso!');
+    }
+
+    public function recalculate(Request $request): RedirectResponse
+    {
+        $family = Family::first();
+        if ($family) {
+            $this->balanceService->recalculateFamilyAccounts($family);
+        }
+
+        return redirect()->route('accounts.index')->with('success', 'Saldos de todas as contas recalculados com sucesso!');
     }
 }

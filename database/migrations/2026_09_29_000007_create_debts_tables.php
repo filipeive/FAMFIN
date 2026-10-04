@@ -11,12 +11,14 @@ return new class extends Migration
         Schema::create('debts', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->ulid('family_id');
-            $table->string('person_name');
+            $table->string('person_name')->nullable();
+            $table->string('creditor')->nullable();
             $table->string('type');
             $table->text('description')->nullable();
             $table->bigInteger('original_amount');
             $table->bigInteger('remaining_amount');
-            $table->decimal('interest_rate', 5, 2)->default(0);
+            $table->bigInteger('monthly_payment')->nullable();
+            $table->decimal('interest_rate', 5, 2)->default(0)->nullable();
             $table->string('interest_type')->nullable();
             $table->date('start_date')->nullable();
             $table->date('due_date')->nullable();

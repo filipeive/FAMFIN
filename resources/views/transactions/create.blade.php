@@ -1,128 +1,125 @@
-@extends('layouts.app')
+<x-layouts.app>
+    <x-slot:header>
+        Registar Nova Transação
+    </x-slot:header>
 
-@section('content')
-<div class="max-w-2xl mx-auto space-y-6">
+    <div class="max-w-3xl mx-auto bg-slate-900 rounded-2xl border border-slate-800 p-6 md:p-8">
+        <form method="POST" action="{{ route('transactions.store') }}" class="space-y-6">
+            @csrf
 
-    <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-        <div>
-            <h1 class="text-2xl font-black tracking-tight text-white">Nova Transacção</h1>
-            <p class="text-xs text-slate-400 mt-0.5">Registar receita, despesa ou transferência</p>
-        </div>
-        <a href="{{ route('transactions.index') }}" class="text-xs text-slate-400 hover:text-white">&larr; Voltar</a>
+            <!-- Transaction Type Tabs -->
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-2">Tipo de Transação</label>
+                <div class="grid grid-cols-3 gap-3">
+                    <label class="flex items-center justify-center p-3 rounded-xl border border-slate-700 bg-slate-800/60 cursor-pointer hover:border-emerald-500 transition has-[:checked]:border-teal-500 has-[:checked]:bg-teal-500/10 has-[:checked]:text-teal-400">
+                        <input type="radio" name="type" value="income" class="sr-only" checked onchange="toggleTransferFields()">
+                        <x-icon name="income" class="w-4 h-4 mr-2" />
+                        <span class="text-xs font-bold">Receita</span>
+                    </label>
+
+                    <label class="flex items-center justify-center p-3 rounded-xl border border-slate-700 bg-slate-800/60 cursor-pointer hover:border-emerald-500 transition has-[:checked]:border-rose-500 has-[:checked]:bg-rose-500/10 has-[:checked]:text-rose-400">
+                        <input type="radio" name="type" value="expense" class="sr-only" onchange="toggleTransferFields()">
+                        <x-icon name="expense" class="w-4 h-4 mr-2" />
+                        <span class="text-xs font-bold">Despesa</span>
+                    </label>
+
+                    <label class="flex items-center justify-center p-3 rounded-xl border border-slate-700 bg-slate-800/60 cursor-pointer hover:border-emerald-500 transition has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-500/10 has-[:checked]:text-indigo-400">
+                        <input type="radio" name="type" value="transfer" class="sr-only" onchange="toggleTransferFields()">
+                        <x-icon name="transfer" class="w-4 h-4 mr-2" />
+                        <span class="text-xs font-bold">Transferência</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Amount -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">Valor (MZN)</label>
+                    <input type="text" name="amount" required placeholder="ex: 15.000,00 ou 15000" class="w-full bg-slate-800 border border-slate-700 text-slate-100 font-bold text-base rounded-xl px-4 py-3 focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+
+                <!-- Date -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">Data</label>
+                    <input type="date" name="transaction_date" required value="{{ date('Y-m-d') }}" class="w-full bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-3 focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1.5">Descrição</label>
+                <input type="text" name="description" required placeholder="ex: Salário Mensal, Supermercado, Combustível" class="w-full bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-3 focus:ring-emerald-500 focus:border-emerald-500">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Account -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5" id="sourceAccountLabel">Conta / Origem</label>
+                    <select name="account_id" required class="w-full bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-3 focus:ring-emerald-500 focus:border-emerald-500">
+                        <option value="">Selecione a conta...</option>
+                        @foreach ($accounts as $acc)
+                            <option value="{{ $acc->id }}">{{ $acc->name }} ({{ formatMoney($acc->balance, 'MZN') }})</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Category -->
+                <div id="categoryField">
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">Categoria</label>
+                    <select name="category_id" class="w-full bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-3 focus:ring-emerald-500 focus:border-emerald-500">
+                        <option value="">Sem categoria</option>
+                        @foreach ($categories as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Destination Account (for Transfer) -->
+                <div id="transferField" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">Conta Destino</label>
+                    <select name="transfer_account_id" class="w-full bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-3 focus:ring-emerald-500 focus:border-emerald-500">
+                        <option value="">Selecione a conta de destino...</option>
+                        @foreach ($accounts as $acc)
+                            <option value="{{ $acc->id }}">{{ $acc->name }} ({{ formatMoney($acc->balance, 'MZN') }})</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1.5">Notas Adicionais (Opcional)</label>
+                <textarea name="notes" rows="3" placeholder="Observações..." class="w-full bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-3 focus:ring-emerald-500 focus:border-emerald-500"></textarea>
+            </div>
+
+            <!-- Submit -->
+            <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+                <a href="{{ route('transactions.index') }}" class="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs font-semibold transition">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition shadow-lg shadow-emerald-500/20">
+                    Registar Transação
+                </button>
+            </div>
+        </form>
     </div>
 
-    <form method="POST" action="{{ route('transactions.store') }}" class="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-5 shadow-xl">
-        @csrf
+    <script>
+        function toggleTransferFields() {
+            const selectedType = document.querySelector('input[name="type"]:checked').value;
+            const categoryField = document.getElementById('categoryField');
+            const transferField = document.getElementById('transferField');
+            const sourceLabel = document.getElementById('sourceAccountLabel');
 
-        <!-- Type Selector -->
-        <div>
-            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Tipo de Movimento</label>
-            <div class="grid grid-cols-3 gap-3">
-                <label class="cursor-pointer border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center text-center transition hover:bg-slate-800 has-[:checked]:border-rose-500 has-[:checked]:bg-rose-950/30">
-                    <input type="radio" name="type" value="expense" class="sr-only" checked onchange="handleTypeChange('expense')">
-                    <span class="text-lg mb-1">💸</span>
-                    <span class="text-xs font-bold text-slate-200">Despesa</span>
-                </label>
-                <label class="cursor-pointer border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center text-center transition hover:bg-slate-800 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-950/30">
-                    <input type="radio" name="type" value="income" class="sr-only" onchange="handleTypeChange('income')">
-                    <span class="text-lg mb-1">💵</span>
-                    <span class="text-xs font-bold text-slate-200">Receita</span>
-                </label>
-                <label class="cursor-pointer border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center text-center transition hover:bg-slate-800 has-[:checked]:border-sky-500 has-[:checked]:bg-sky-950/30">
-                    <input type="radio" name="type" value="transfer" class="sr-only" onchange="handleTypeChange('transfer')">
-                    <span class="text-lg mb-1">⇄</span>
-                    <span class="text-xs font-bold text-slate-200">Transferência</span>
-                </label>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- Amount -->
-            <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Valor (MZN)</label>
-                <input type="text" name="amount" required placeholder="Ex: 5000 ou 5.000,00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white font-mono focus:border-emerald-500 focus:outline-none">
-            </div>
-
-            <!-- Date -->
-            <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Data</label>
-                <input type="date" name="transaction_date" required value="{{ now()->toDateString() }}" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none">
-            </div>
-        </div>
-
-        <!-- Description -->
-        <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Descrição</label>
-            <input type="text" name="description" required placeholder="Ex: Rancho do mês, Salário, Electricidade" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none">
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- Source Account -->
-            <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1" id="account_label">Conta</label>
-                <select name="account_id" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none">
-                    @foreach($family->accounts as $acc)
-                        <option value="{{ $acc->id }}">{{ $acc->icon }} {{ $acc->name }} (Saldo: {{ $acc->formatted_balance }})</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <!-- Transfer Target Account (Hidden by default) -->
-            <div id="transfer_account_wrapper" class="hidden">
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Conta de Destino</label>
-                <select name="transfer_account_id" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none">
-                    <option value="">Seleccione a conta destino</option>
-                    @foreach($family->accounts as $acc)
-                        <option value="{{ $acc->id }}">{{ $acc->icon }} {{ $acc->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <!-- Category (Shown for Income & Expense) -->
-            <div id="category_wrapper">
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Categoria</label>
-                <select name="category_id" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none">
-                    <option value="">Sem categoria</option>
-                    @foreach($family->categories as $cat)
-                        <option value="{{ $cat->id }}">{{ $cat->icon }} {{ $cat->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-        </div>
-
-        <!-- Notes -->
-        <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Notas adicionais (opcional)</label>
-            <textarea name="notes" rows="2" placeholder="Observações..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none"></textarea>
-        </div>
-
-        <div class="pt-3 border-t border-slate-800 flex justify-end gap-3">
-            <a href="{{ route('transactions.index') }}" class="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white border border-slate-800 hover:bg-slate-800 transition">
-                Cancelar
-            </a>
-            <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg shadow-emerald-950">
-                Guardar Transacção
-            </button>
-        </div>
-    </form>
-
-</div>
-
-<script>
-    function handleTypeChange(type) {
-        const catWrapper = document.getElementById('category_wrapper');
-        const transferWrapper = document.getElementById('transfer_account_wrapper');
-        const accLabel = document.getElementById('account_label');
-
-        if (type === 'transfer') {
-            catWrapper.classList.add('hidden');
-            transferWrapper.classList.remove('hidden');
-            accLabel.textContent = 'Conta de Origem';
-        } else {
-            catWrapper.classList.remove('hidden');
-            transferWrapper.classList.add('hidden');
-            accLabel.textContent = 'Conta';
+            if (selectedType === 'transfer') {
+                categoryField.classList.add('hidden');
+                transferField.classList.remove('hidden');
+                sourceLabel.innerText = 'Conta de Origem';
+            } else {
+                categoryField.classList.remove('hidden');
+                transferField.classList.add('hidden');
+                sourceLabel.innerText = 'Conta';
+            }
         }
-    }
-</script>
-@endsection
+    </script>
+</x-layouts.app>
