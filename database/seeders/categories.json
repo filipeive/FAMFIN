@@ -1,0 +1,488 @@
+[
+    {
+        "name": "Salário",
+        "type": "income",
+        "icon": "💰",
+        "color": "#10B981",
+        "sort_order": 0,
+        "is_system": true,
+        "parent_name": null
+    },
+    {
+        "name": "Rendimentos",
+        "type": "income",
+        "icon": "📈",
+        "color": "#059669",
+        "sort_order": 1,
+        "is_system": false,
+        "parent_name": null
+    },
+    {
+        "name": "Extras",
+        "type": "income",
+        "icon": "🎁",
+        "color": "#34D399",
+        "sort_order": 2,
+        "is_system": false,
+        "parent_name": null
+    },
+    {
+        "name": "Reembolsos",
+        "type": "income",
+        "icon": "🔄",
+        "color": "#6EE7B7",
+        "sort_order": 3,
+        "is_system": false,
+        "parent_name": null
+    },
+    {
+        "name": "Casa",
+        "type": "expense",
+        "icon": "🏠",
+        "color": "#EF4444",
+        "sort_order": 1,
+        "is_system": true,
+        "parent_name": null
+    },
+    {
+        "name": "Rancho (Alimentação)",
+        "type": "expense",
+        "icon": "🛒",
+        "color": "#F87171",
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Casa"
+    },
+    {
+        "name": "Transporte",
+        "type": "expense",
+        "icon": "🚌",
+        "color": "#FB923C",
+        "sort_order": 1,
+        "is_system": false,
+        "parent_name": "Casa"
+    },
+    {
+        "name": "TV \/ Televisão",
+        "type": "expense",
+        "icon": "📺",
+        "color": "#A78BFA",
+        "sort_order": 2,
+        "is_system": false,
+        "parent_name": "Casa"
+    },
+    {
+        "name": "Saúde",
+        "type": "expense",
+        "icon": "🏥",
+        "color": "#F43F5E",
+        "sort_order": 3,
+        "is_system": false,
+        "parent_name": "Casa"
+    },
+    {
+        "name": "Água",
+        "type": "expense",
+        "icon": "💧",
+        "color": "#38BDF8",
+        "sort_order": 4,
+        "is_system": false,
+        "parent_name": "Casa"
+    },
+    {
+        "name": "Electricidade",
+        "type": "expense",
+        "icon": "⚡",
+        "color": "#FBBF24",
+        "sort_order": 5,
+        "is_system": false,
+        "parent_name": "Casa"
+    },
+    {
+        "name": "Mesadas",
+        "type": "expense",
+        "icon": "👤",
+        "color": "#C084FC",
+        "sort_order": 6,
+        "is_system": false,
+        "parent_name": "Casa"
+    },
+    {
+        "name": "Educação",
+        "type": "expense",
+        "icon": "📚",
+        "color": "#2DD4BF",
+        "sort_order": 7,
+        "is_system": false,
+        "parent_name": "Casa"
+    },
+    {
+        "name": "Vestuário",
+        "type": "expense",
+        "icon": "👕",
+        "color": "#FB7185",
+        "sort_order": 8,
+        "is_system": false,
+        "parent_name": "Casa"
+    },
+    {
+        "name": "Família \/ Apoio Familiar",
+        "type": "expense",
+        "icon": "👨‍👩‍👧‍👦",
+        "color": "#8B5CF6",
+        "sort_order": 2,
+        "is_system": true,
+        "parent_name": null
+    },
+    {
+        "name": "Lazer",
+        "type": "expense",
+        "icon": "🎉",
+        "color": "#EC4899",
+        "sort_order": 3,
+        "is_system": false,
+        "parent_name": null
+    },
+    {
+        "name": "Presentes",
+        "type": "expense",
+        "icon": "🎁",
+        "color": "#F472B6",
+        "sort_order": 4,
+        "is_system": false,
+        "parent_name": null
+    },
+    {
+        "name": "Eventos",
+        "type": "expense",
+        "icon": "🎊",
+        "color": "#A855F7",
+        "sort_order": 5,
+        "is_system": false,
+        "parent_name": null
+    },
+    {
+        "name": "Igreja \/ Religião",
+        "type": "expense",
+        "icon": "⛪",
+        "color": "#6366F1",
+        "sort_order": 6,
+        "is_system": false,
+        "parent_name": null
+    },
+    {
+        "name": "Outros",
+        "type": "expense",
+        "icon": "📦",
+        "color": "#94A3B8",
+        "sort_order": 99,
+        "is_system": false,
+        "parent_name": null
+    },
+    {
+        "name": "Dívidas & Empréstimos",
+        "type": "expense",
+        "icon": "💳",
+        "color": "#EF4444",
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": null
+    },
+    {
+        "name": "Despesas da Casa",
+        "type": "expense",
+        "icon": "🏠",
+        "color": "#3B82F6",
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": null
+    },
+    {
+        "name": "Apoio Familiar",
+        "type": "expense",
+        "icon": "👨‍👩‍👧‍👦",
+        "color": "#8B5CF6",
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": null
+    },
+    {
+        "name": "Rancho",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "TV",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Saude",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Agua",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "TV (TMT)",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "computador",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Celular",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "TV (Gotv)",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Inscriçao",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "mota",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "TV_Pasma",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Filipe",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Rainha",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Cells",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Naz & Filo",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Aniversário Casamento",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Documentos",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Escolinha de Eunice",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Obra",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Cadeiras",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Maquina",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Dia 12",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Fechadura E Fogão",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Areia Mina",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Poupanca",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Enxoval",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Poupança",
+        "type": "expense",
+        "icon": "🏠",
+        "color": null,
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": "Despesas da Casa"
+    },
+    {
+        "name": "Salário & Rendimentos",
+        "type": "income",
+        "icon": "income",
+        "color": "#10B981",
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": null
+    },
+    {
+        "name": "INSS & Encargos Sociais",
+        "type": "expense",
+        "icon": "scale",
+        "color": "#64748B",
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": null
+    },
+    {
+        "name": "Dízimos & Contribuições",
+        "type": "expense",
+        "icon": "heart",
+        "color": "#8B5CF6",
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": null
+    },
+    {
+        "name": "Poupança & Reservas",
+        "type": "expense",
+        "icon": "savings",
+        "color": "#06B6D4",
+        "sort_order": 0,
+        "is_system": false,
+        "parent_name": null
+    }
+]

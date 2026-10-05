@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Enums\CategoryType;
-use App\Enums\FinancialRuleType;
 use App\Enums\AccountType;
+use App\Enums\FinancialRuleType;
 use App\Enums\UserRole;
 use App\Models\Account;
 use App\Models\Category;
@@ -20,13 +19,13 @@ class DatabaseSeeder extends Seeder
     {
         // ── Create the family ──────────────────────
         $family = Family::create([
-            'name' => 'Família dos Santos',
+            'name' => 'Família Filipe dos Santos',
             'currency' => 'MZN',
             'timezone' => 'Africa/Maputo',
             'locale' => 'pt_PT',
         ]);
 
-        // ── Create the admin user ──────────────────
+        // ── Create default users ───────────────────
         User::create([
             'name' => 'Filipe dos Santos',
             'email' => 'filipe@famfin.app',
@@ -35,7 +34,15 @@ class DatabaseSeeder extends Seeder
             'role' => UserRole::Admin,
         ]);
 
-        // ── Create default account ─────────────────
+        User::create([
+            'name' => 'Filipe dos Santos',
+            'email' => 'filipe@famfin.mz',
+            'password' => Hash::make('password'),
+            'family_id' => $family->id,
+            'role' => UserRole::Admin,
+        ]);
+
+        // ── Create default account with 0 balance ──
         Account::create([
             'family_id' => $family->id,
             'name' => 'Conta Principal',
@@ -46,62 +53,47 @@ class DatabaseSeeder extends Seeder
             'icon' => '🏦',
         ]);
 
-        // ── Create income categories ───────────────
-        $this->createCategories($family->id, CategoryType::Income, [
-            ['name' => 'Salário', 'icon' => '💰', 'color' => '#10B981', 'is_system' => true],
-            ['name' => 'Rendimentos', 'icon' => '📈', 'color' => '#059669'],
-            ['name' => 'Extras', 'icon' => '🎁', 'color' => '#34D399'],
-            ['name' => 'Reembolsos', 'icon' => '🔄', 'color' => '#6EE7B7'],
-        ]);
+        // ── Seed all 54 Categories from categories.json ──
+        $jsonPath = database_path('seeders/categories.json');
+        if (file_exists($jsonPath)) {
+            $categories = json_decode(file_get_contents($jsonPath), true);
+            $parentMap = [];
 
-        // ── Create expense categories ──────────────
-        // Based on the spreadsheet structure: Casa, Família, Dívidas
+            // 1st pass: create top-level categories
+            foreach ($categories as $cat) {
+                if (empty($cat['parent_name'])) {
+                    $created = Category::create([
+                        'family_id' => $family->id,
+                        'name' => $cat['name'],
+                        'type' => $cat['type'],
+                        'icon' => $cat['icon'],
+                        'color' => $cat['color'],
+                        'sort_order' => $cat['sort_order'] ?? 0,
+                        'is_system' => $cat['is_system'] ?? false,
+                    ]);
+                    $parentMap[$cat['name']] = $created->id;
+                }
+            }
 
-        // Casa (Despesas Domésticas) — from the spreadsheet
-        $casa = Category::create([
-            'family_id' => $family->id,
-            'name' => 'Casa',
-            'type' => CategoryType::Expense,
-            'icon' => '🏠',
-            'color' => '#EF4444',
-            'sort_order' => 1,
-            'is_system' => true,
-        ]);
-
-        $this->createSubcategories($family->id, $casa->id, [
-            ['name' => 'Rancho (Alimentação)', 'icon' => '🛒', 'color' => '#F87171'],
-            ['name' => 'Transporte', 'icon' => '🚌', 'color' => '#FB923C'],
-            ['name' => 'TV / Televisão', 'icon' => '📺', 'color' => '#A78BFA'],
-            ['name' => 'Saúde', 'icon' => '🏥', 'color' => '#F43F5E'],
-            ['name' => 'Água', 'icon' => '💧', 'color' => '#38BDF8'],
-            ['name' => 'Electricidade', 'icon' => '⚡', 'color' => '#FBBF24'],
-            ['name' => 'Mesadas', 'icon' => '👤', 'color' => '#C084FC'],
-            ['name' => 'Educação', 'icon' => '📚', 'color' => '#2DD4BF'],
-            ['name' => 'Vestuário', 'icon' => '👕', 'color' => '#FB7185'],
-        ]);
-
-        // Família (Apoio Familiar) — core concept from the spreadsheet
-        $familia = Category::create([
-            'family_id' => $family->id,
-            'name' => 'Família / Apoio Familiar',
-            'type' => CategoryType::Expense,
-            'icon' => '👨‍👩‍👧‍👦',
-            'color' => '#8B5CF6',
-            'sort_order' => 2,
-            'is_system' => true,
-        ]);
-
-        // Other expense categories
-        $this->createCategories($family->id, CategoryType::Expense, [
-            ['name' => 'Lazer', 'icon' => '🎉', 'color' => '#EC4899', 'sort_order' => 3],
-            ['name' => 'Presentes', 'icon' => '🎁', 'color' => '#F472B6', 'sort_order' => 4],
-            ['name' => 'Eventos', 'icon' => '🎊', 'color' => '#A855F7', 'sort_order' => 5],
-            ['name' => 'Igreja / Religião', 'icon' => '⛪', 'color' => '#6366F1', 'sort_order' => 6],
-            ['name' => 'Outros', 'icon' => '📦', 'color' => '#94A3B8', 'sort_order' => 99],
-        ]);
+            // 2nd pass: create subcategories linking to parent
+            foreach ($categories as $cat) {
+                if (!empty($cat['parent_name'])) {
+                    $parentId = $parentMap[$cat['parent_name']] ?? null;
+                    Category::create([
+                        'family_id' => $family->id,
+                        'parent_id' => $parentId,
+                        'name' => $cat['name'],
+                        'type' => $cat['type'],
+                        'icon' => $cat['icon'],
+                        'color' => $cat['color'],
+                        'sort_order' => $cat['sort_order'] ?? 0,
+                        'is_system' => $cat['is_system'] ?? false,
+                    ]);
+                }
+            }
+        }
 
         // ── Create financial rules ─────────────────
-        // INSS Moçambique: 3% contribuição do trabalhador
         FinancialRule::create([
             'family_id' => $family->id,
             'type' => FinancialRuleType::Inss,
@@ -113,7 +105,6 @@ class DatabaseSeeder extends Seeder
             'sort_order' => 1,
         ]);
 
-        // Dízimo: 10% — configuração pessoal do Filipe
         FinancialRule::create([
             'family_id' => $family->id,
             'type' => FinancialRuleType::Tithe,
@@ -124,41 +115,5 @@ class DatabaseSeeder extends Seeder
             'apply_on_income' => true,
             'sort_order' => 2,
         ]);
-    }
-
-    /**
-     * Create top-level categories.
-     */
-    private function createCategories(string $familyId, CategoryType $type, array $categories): void
-    {
-        foreach ($categories as $i => $cat) {
-            Category::create([
-                'family_id' => $familyId,
-                'name' => $cat['name'],
-                'type' => $type,
-                'icon' => $cat['icon'] ?? null,
-                'color' => $cat['color'] ?? null,
-                'sort_order' => $cat['sort_order'] ?? $i,
-                'is_system' => $cat['is_system'] ?? false,
-            ]);
-        }
-    }
-
-    /**
-     * Create subcategories under a parent.
-     */
-    private function createSubcategories(string $familyId, string $parentId, array $categories): void
-    {
-        foreach ($categories as $i => $cat) {
-            Category::create([
-                'family_id' => $familyId,
-                'parent_id' => $parentId,
-                'name' => $cat['name'],
-                'type' => CategoryType::Expense,
-                'icon' => $cat['icon'] ?? null,
-                'color' => $cat['color'] ?? null,
-                'sort_order' => $i,
-            ]);
-        }
     }
 }
