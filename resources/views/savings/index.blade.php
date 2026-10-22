@@ -4,69 +4,78 @@
     </x-slot:header>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Savings Goals List (2 cols) -->
-        <div class="lg:col-span-2 space-y-4">
+        <!-- Savings Goals Grid (2 cols) -->
+        <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
             @forelse ($goals as $goal)
-                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                                <x-icon name="piggy-bank" class="w-5 h-5" />
+                <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition flex flex-col justify-between shadow-sm">
+                    <div>
+                        <div class="flex items-start justify-between gap-2 mb-3">
+                            <div class="flex items-center space-x-2.5 min-w-0">
+                                <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+                                    <x-icon name="piggy-bank" class="w-4 h-4" />
+                                </div>
+                                <div class="min-w-0">
+                                    <h3 class="text-sm font-bold text-white truncate">{{ $goal['name'] }}</h3>
+                                    @if ($goal['deadline'])
+                                        <p class="text-[10px] text-slate-400">Prazo: {{ $goal['deadline'] }}</p>
+                                    @endif
+                                </div>
                             </div>
-                            <div>
-                                <h3 class="text-base font-bold text-white">{{ $goal['name'] }}</h3>
-                                @if ($goal['deadline'])
-                                    <p class="text-xs text-slate-400">Prazo estipulado: {{ $goal['deadline'] }}</p>
-                                @endif
-                            </div>
-                        </div>
 
-                        <div class="flex items-center space-x-2">
-                            <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-                                {{ $goal['progress_percentage'] }}% Atingido
+                            <span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex-shrink-0">
+                                {{ $goal['progress_percentage'] }}%
                             </span>
-                            <button onclick="openContributeModal('{{ $goal['goal_id'] }}', '{{ addslashes($goal['name']) }}')" class="px-3 py-1 rounded-xl text-xs font-semibold bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition">
-                                Contribuir
-                            </button>
                         </div>
-                    </div>
 
-                    <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden my-3">
-                        <div class="h-full bg-emerald-500 transition-all duration-500" style="width: {{ min(100, $goal['progress_percentage']) }}%"></div>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400 gap-2">
-                        <div>
-                            Acumulado: <strong class="text-white">{{ $goal['formatted_current'] }}</strong> / Alvo: <span class="text-slate-300">{{ $goal['formatted_target'] }}</span>
+                        <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden my-2.5">
+                            <div class="h-full bg-emerald-500 transition-all duration-500" style="width: {{ min(100, $goal['progress_percentage']) }}%"></div>
                         </div>
-                        <div>
-                            Falta: <strong class="text-slate-300">{{ $goal['formatted_remaining'] }}</strong>
-                        </div>
-                    </div>
 
-                    @if ($goal['formatted_monthly_needed'])
-                        <div class="mt-4 pt-3 border-t border-slate-800/80 text-xs text-amber-300/90 flex items-center">
-                            <x-icon name="calendar" class="w-4 h-4 mr-1.5 flex-shrink-0" />
-                            Poupança mensal recomendada para atingir o prazo: <strong class="ml-1 text-white">{{ $goal['formatted_monthly_needed'] }} / mês</strong>
-                        </div>
-                    @endif
-
-                    @if (isset($goal['model']->contributions) && count($goal['model']->contributions) > 0)
-                        <div class="mt-4 pt-3 border-t border-slate-800/80">
-                            <p class="text-[11px] font-semibold text-slate-400 mb-2">Últimas Contribuições</p>
-                            <div class="space-y-1.5">
-                                @foreach ($goal['model']->contributions as $c)
-                                    <div class="flex justify-between text-xs text-slate-300 bg-slate-800/30 px-3 py-1.5 rounded-lg">
-                                        <span>{{ \Carbon\Carbon::parse($c->contribution_date)->format('d/m/Y') }} &bull; {{ $c->note ?? 'Aporte' }}</span>
-                                        <span class="font-bold text-teal-400">+{{ formatMoney($c->amount, $family->currency) }}</span>
-                                    </div>
-                                @endforeach
+                        <div class="space-y-1 text-xs text-slate-400 pt-1">
+                            <div class="flex justify-between">
+                                <span>Acumulado:</span>
+                                <strong class="text-white">{{ $goal['formatted_current'] }}</strong>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Alvo:</span>
+                                <span class="text-slate-300">{{ $goal['formatted_target'] }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Falta:</span>
+                                <strong class="text-slate-400">{{ $goal['formatted_remaining'] }}</strong>
                             </div>
                         </div>
-                    @endif
+
+                        @if ($goal['formatted_monthly_needed'])
+                            <div class="mt-3 pt-2.5 border-t border-slate-800/80 text-[11px] text-amber-300/90 flex items-center">
+                                <x-icon name="calendar" class="w-3.5 h-3.5 mr-1.5 flex-shrink-0" />
+                                <span>Sugerido: <strong class="text-white">{{ $goal['formatted_monthly_needed'] }}/mês</strong></span>
+                            </div>
+                        @endif
+
+                        @if (isset($goal['model']->contributions) && count($goal['model']->contributions) > 0)
+                            <div class="mt-3 pt-2.5 border-t border-slate-800/80">
+                                <p class="text-[10px] font-bold uppercase text-slate-400 mb-1.5">Últimos Aportes</p>
+                                <div class="space-y-1">
+                                    @foreach (array_slice($goal['model']->contributions->all(), 0, 3) as $c)
+                                        <div class="flex justify-between text-[11px] text-slate-300 bg-slate-800/40 px-2.5 py-1 rounded-lg">
+                                            <span class="truncate max-w-[120px]">{{ \Carbon\Carbon::parse($c->contribution_date)->format('d/m') }} &bull; {{ $c->note ?? 'Aporte' }}</span>
+                                            <span class="font-bold text-teal-400">+{{ formatMoney($c->amount, $family->currency) }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-slate-800">
+                        <button onclick="openContributeModal('{{ $goal['goal_id'] }}', '{{ addslashes($goal['name']) }}')" class="w-full py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition active:scale-95 shadow-md shadow-emerald-500/10">
+                            Contribuir / Aportar
+                        </button>
+                    </div>
                 </div>
             @empty
-                <div class="p-12 text-center text-slate-500 text-xs bg-slate-900 rounded-2xl border border-slate-800">
+                <div class="col-span-full p-12 text-center text-slate-500 text-xs bg-slate-900 rounded-2xl border border-slate-800">
                     Nenhuma meta de poupança registada. Crie objetivos como Fundo de Emergência, Viagem, Investimento ou Reforma.
                 </div>
             @endforelse

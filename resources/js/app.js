@@ -1,4 +1,8 @@
+import Alpine from 'alpinejs';
 import { App } from '@capacitor/app';
+
+window.Alpine = Alpine;
+Alpine.start();
 
 // Android Hardware Back Button & Native Integration
 document.addEventListener('DOMContentLoaded', () => {

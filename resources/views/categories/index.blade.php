@@ -7,10 +7,10 @@
         <!-- Categories List (2 cols) -->
         <div class="lg:col-span-2 space-y-6">
             <!-- Expense Categories -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center space-x-2.5">
-                        <div class="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+                        <div class="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
                             <x-icon name="expense" class="w-4 h-4" />
                         </div>
                         <div>
@@ -20,100 +20,91 @@
                     </div>
                 </div>
 
-                <div class="divide-y divide-slate-800/80">
+                <!-- Grid de Cartões de Despesas -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     @forelse ($expenseCategories as $cat)
-                        <div class="py-3.5 flex flex-col space-y-2.5">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <span class="w-3.5 h-3.5 rounded-full ring-2 ring-slate-800 flex-shrink-0" style="background-color: {{ $cat->color }}"></span>
-                                    <div>
-                                        <span class="font-bold text-sm text-slate-100">{{ $cat->name }}</span>
-                                        <span class="text-xs text-slate-500 font-medium ml-1.5">({{ $cat->transactions_count }} transações)</span>
+                        <div class="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 hover:border-slate-600 transition flex flex-col justify-between shadow-sm">
+                            <div>
+                                <div class="flex items-start justify-between gap-2 mb-2">
+                                    <div class="flex items-center space-x-2.5 min-w-0">
+                                        <span class="w-3.5 h-3.5 rounded-full ring-2 ring-slate-800 flex-shrink-0" style="background-color: {{ $cat->color }}"></span>
+                                        <div class="min-w-0">
+                                            <h4 class="font-bold text-sm text-slate-100 truncate">{{ $cat->name }}</h4>
+                                            <span class="text-[10px] text-slate-400 font-medium">{{ $cat->transactions_count }} transações</span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="flex items-center space-x-1.5">
-                                    @if ($cat->children && $cat->children->count() > 0)
-                                        <form method="POST" action="{{ route('categories.destroy_children', $cat) }}" id="clear-children-{{ $cat->id }}">
+                                    <div class="flex items-center space-x-1 flex-shrink-0">
+                                        <a href="{{ route('categories.edit', $cat) }}" title="Editar" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition">
+                                            <x-icon name="pencil" class="w-3.5 h-3.5" />
+                                        </a>
+
+                                        <form method="POST" action="{{ route('categories.destroy', $cat) }}" id="delete-cat-{{ $cat->id }}">
                                             @csrf
                                             @method('DELETE')
                                             <button type="button" 
-                                                    onclick="confirmAction('clear-children-{{ $cat->id }}', 'Limpar Subcategorias?', 'Deseja desvincular todas as {{ $cat->children->count() }} subcategorias de {{ $cat->name }}?', 'Sim, Limpar')"
-                                                    title="Limpar todas as subcategorias" 
-                                                    class="px-2 py-1 text-[11px] font-semibold rounded-lg text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition">
-                                                Limpar Subcategorias
+                                                    onclick="confirmAction('delete-cat-{{ $cat->id }}', 'Eliminar Categoria?', 'Deseja realmente eliminar \'{{ $cat->name }}\'? As transações serão mantidas.', 'Sim, Eliminar')"
+                                                    title="Eliminar" 
+                                                    class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition">
+                                                <x-icon name="trash" class="w-3.5 h-3.5" />
                                             </button>
                                         </form>
-                                    @endif
-
-                                    <a href="{{ route('categories.edit', $cat) }}" title="Editar" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition">
-                                        <x-icon name="pencil" class="w-4 h-4" />
-                                    </a>
-
-                                    <form method="POST" action="{{ route('categories.destroy', $cat) }}" id="delete-cat-{{ $cat->id }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="button" 
-                                                onclick="confirmAction('delete-cat-{{ $cat->id }}', 'Eliminar Categoria?', 'Deseja realmente eliminar \'{{ $cat->name }}\'? As transações serão mantidas.', 'Sim, Eliminar')"
-                                                title="Eliminar" 
-                                                class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition">
-                                            <x-icon name="trash" class="w-4 h-4" />
-                                        </button>
-                                    </form>
+                                    </div>
                                 </div>
-                            </div>
 
-                            @if ($cat->children && $cat->children->count() > 0)
-                                <div class="pl-4 py-1.5 space-y-1.5 border-l-2 border-slate-800 ml-1.5 bg-slate-950/40 rounded-r-xl pr-2">
-                                    @foreach ($cat->children as $child)
-                                        <div class="flex items-center justify-between text-xs py-1 px-2 rounded-lg hover:bg-slate-800/50 transition group">
-                                            <div class="flex items-center space-x-2">
-                                                <span class="text-slate-500 group-hover:text-slate-400">&bull;</span>
-                                                <span class="text-slate-300 font-medium group-hover:text-white">{{ $child->name }}</span>
-                                                <span class="text-[10px] text-slate-500">({{ $child->transactions_count }} tr.)</span>
-                                            </div>
-                                            <div class="flex items-center space-x-1">
-                                                <!-- Tirar da Lista (Unlink) -->
-                                                <form method="POST" action="{{ route('categories.unlink', $child) }}" id="unlink-subcat-{{ $child->id }}">
-                                                    @csrf
-                                                    <button type="button" 
-                                                            onclick="confirmAction('unlink-subcat-{{ $child->id }}', 'Tirar da lista?', 'Deseja desvincular \'{{ $child->name }}\' desta categoria superior?', 'Sim, Tirar da lista')"
-                                                            title="Tirar da lista (Desvincular)" 
-                                                            class="px-2 py-0.5 text-[10px] font-medium rounded text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 transition">
-                                                        Tirar da lista
-                                                    </button>
-                                                </form>
-
-                                                <a href="{{ route('categories.edit', $child) }}" title="Editar" class="p-1 text-slate-500 hover:text-emerald-400 rounded">
-                                                    <x-icon name="pencil" class="w-3.5 h-3.5" />
-                                                </a>
-
-                                                <form method="POST" action="{{ route('categories.destroy', $child) }}" id="delete-subcat-{{ $child->id }}">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="button" 
-                                                            onclick="confirmAction('delete-subcat-{{ $child->id }}', 'Eliminar Subcategoria?', 'Deseja eliminar definitivamente \'{{ $child->name }}\'?', 'Sim, Eliminar')"
-                                                            title="Eliminar" 
-                                                            class="p-1 text-slate-500 hover:text-rose-400 rounded">
-                                                        <x-icon name="trash" class="w-3.5 h-3.5" />
-                                                    </button>
-                                                </form>
-                                            </div>
+                                @if ($cat->children && $cat->children->count() > 0)
+                                    <div class="mt-3 pt-2.5 border-t border-slate-700/50 space-y-1.5 bg-slate-950/40 p-2.5 rounded-lg">
+                                        <div class="flex items-center justify-between text-[10px] font-bold uppercase text-slate-400 mb-1">
+                                            <span>Subcategorias ({{ $cat->children->count() }})</span>
+                                            <form method="POST" action="{{ route('categories.destroy_children', $cat) }}" id="clear-children-{{ $cat->id }}">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="button" 
+                                                        onclick="confirmAction('clear-children-{{ $cat->id }}', 'Limpar Subcategorias?', 'Deseja desvincular todas as subcategorias de {{ $cat->name }}?', 'Sim, Limpar')"
+                                                        title="Limpar subcategorias" 
+                                                        class="text-[9px] text-amber-400 hover:text-amber-300">
+                                                    Desvincular todas
+                                                </button>
+                                            </form>
                                         </div>
-                                    @endforeach
-                                </div>
-                            @endif
+                                        <div class="space-y-1">
+                                            @foreach ($cat->children as $child)
+                                                <div class="flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 transition">
+                                                    <span class="text-slate-300 font-medium truncate max-w-[120px]">{{ $child->name }}</span>
+                                                    <div class="flex items-center space-x-1">
+                                                        <span class="text-[10px] text-slate-500 mr-1">{{ $child->transactions_count }} tr.</span>
+                                                        <form method="POST" action="{{ route('categories.unlink', $child) }}" id="unlink-subcat-{{ $child->id }}">
+                                                            @csrf
+                                                            <button type="button" 
+                                                                    onclick="confirmAction('unlink-subcat-{{ $child->id }}', 'Tirar da lista?', 'Deseja desvincular \'{{ $child->name }}\' desta categoria superior?', 'Sim, Tirar da lista')"
+                                                                    title="Tirar da lista (Desvincular)" 
+                                                                    class="p-1 text-slate-400 hover:text-amber-400 rounded">
+                                                                <x-icon name="close" class="w-3 h-3" />
+                                                            </button>
+                                                        </form>
+                                                        <a href="{{ route('categories.edit', $child) }}" title="Editar" class="p-1 text-slate-500 hover:text-emerald-400 rounded">
+                                                            <x-icon name="pencil" class="w-3 h-3" />
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                     @empty
-                        <p class="py-6 text-center text-slate-500 text-xs">Nenhuma categoria de despesa cadastrada.</p>
+                        <div class="col-span-full py-6 text-center text-slate-500 text-xs">
+                            Nenhuma categoria de despesa cadastrada.
+                        </div>
                     @endforelse
                 </div>
             </div>
 
             <!-- Income Categories -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center space-x-2.5">
-                        <div class="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400">
+                        <div class="w-9 h-9 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400">
                             <x-icon name="income" class="w-4 h-4" />
                         </div>
                         <div>
@@ -123,97 +114,89 @@
                     </div>
                 </div>
 
-                <div class="divide-y divide-slate-800/80">
+                <!-- Grid de Cartões de Receitas -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     @forelse ($incomeCategories as $cat)
-                        <div class="py-3.5 flex flex-col space-y-2.5">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <span class="w-3.5 h-3.5 rounded-full ring-2 ring-slate-800 flex-shrink-0" style="background-color: {{ $cat->color }}"></span>
-                                    <div>
-                                        <span class="font-bold text-sm text-slate-100">{{ $cat->name }}</span>
-                                        <span class="text-xs text-slate-500 font-medium ml-1.5">({{ $cat->transactions_count }} transações)</span>
+                        <div class="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 hover:border-slate-600 transition flex flex-col justify-between shadow-sm">
+                            <div>
+                                <div class="flex items-start justify-between gap-2 mb-2">
+                                    <div class="flex items-center space-x-2.5 min-w-0">
+                                        <span class="w-3.5 h-3.5 rounded-full ring-2 ring-slate-800 flex-shrink-0" style="background-color: {{ $cat->color }}"></span>
+                                        <div class="min-w-0">
+                                            <h4 class="font-bold text-sm text-slate-100 truncate">{{ $cat->name }}</h4>
+                                            <span class="text-[10px] text-slate-400 font-medium">{{ $cat->transactions_count }} transações</span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="flex items-center space-x-1.5">
-                                    @if ($cat->children && $cat->children->count() > 0)
-                                        <form method="POST" action="{{ route('categories.destroy_children', $cat) }}" id="clear-children-inc-{{ $cat->id }}">
+                                    <div class="flex items-center space-x-1 flex-shrink-0">
+                                        <a href="{{ route('categories.edit', $cat) }}" title="Editar" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition">
+                                            <x-icon name="pencil" class="w-3.5 h-3.5" />
+                                        </a>
+
+                                        <form method="POST" action="{{ route('categories.destroy', $cat) }}" id="delete-inc-{{ $cat->id }}">
                                             @csrf
                                             @method('DELETE')
                                             <button type="button" 
-                                                    onclick="confirmAction('clear-children-inc-{{ $cat->id }}', 'Limpar Subcategorias?', 'Deseja desvincular todas as subcategorias de {{ $cat->name }}?', 'Sim, Limpar')"
-                                                    title="Limpar subcategorias" 
-                                                    class="px-2 py-1 text-[11px] font-semibold rounded-lg text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition">
-                                                Limpar Subcategorias
+                                                    onclick="confirmAction('delete-inc-{{ $cat->id }}', 'Eliminar Categoria?', 'Deseja realmente eliminar \'{{ $cat->name }}\'?', 'Sim, Eliminar')"
+                                                    title="Eliminar" 
+                                                    class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition">
+                                                <x-icon name="trash" class="w-3.5 h-3.5" />
                                             </button>
                                         </form>
-                                    @endif
-
-                                    <a href="{{ route('categories.edit', $cat) }}" title="Editar" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition">
-                                        <x-icon name="pencil" class="w-4 h-4" />
-                                    </a>
-
-                                    <form method="POST" action="{{ route('categories.destroy', $cat) }}" id="delete-inc-{{ $cat->id }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="button" 
-                                                onclick="confirmAction('delete-inc-{{ $cat->id }}', 'Eliminar Categoria?', 'Deseja realmente eliminar \'{{ $cat->name }}\'?', 'Sim, Eliminar')"
-                                                title="Eliminar" 
-                                                class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition">
-                                            <x-icon name="trash" class="w-4 h-4" />
-                                        </button>
-                                    </form>
+                                    </div>
                                 </div>
-                            </div>
 
-                            @if ($cat->children && $cat->children->count() > 0)
-                                <div class="pl-4 py-1.5 space-y-1.5 border-l-2 border-slate-800 ml-1.5 bg-slate-950/40 rounded-r-xl pr-2">
-                                    @foreach ($cat->children as $child)
-                                        <div class="flex items-center justify-between text-xs py-1 px-2 rounded-lg hover:bg-slate-800/50 transition group">
-                                            <div class="flex items-center space-x-2">
-                                                <span class="text-slate-500 group-hover:text-slate-400">&bull;</span>
-                                                <span class="text-slate-300 font-medium group-hover:text-white">{{ $child->name }}</span>
-                                                <span class="text-[10px] text-slate-500">({{ $child->transactions_count }} tr.)</span>
-                                            </div>
-                                            <div class="flex items-center space-x-1">
-                                                <form method="POST" action="{{ route('categories.unlink', $child) }}" id="unlink-subcat-inc-{{ $child->id }}">
-                                                    @csrf
-                                                    <button type="button" 
-                                                            onclick="confirmAction('unlink-subcat-inc-{{ $child->id }}', 'Tirar da lista?', 'Deseja desvincular \'{{ $child->name }}\' desta categoria?', 'Sim, Tirar da lista')"
-                                                            title="Tirar da lista (Desvincular)" 
-                                                            class="px-2 py-0.5 text-[10px] font-medium rounded text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 transition">
-                                                        Tirar da lista
-                                                    </button>
-                                                </form>
-
-                                                <a href="{{ route('categories.edit', $child) }}" title="Editar" class="p-1 text-slate-500 hover:text-emerald-400 rounded">
-                                                    <x-icon name="pencil" class="w-3.5 h-3.5" />
-                                                </a>
-
-                                                <form method="POST" action="{{ route('categories.destroy', $child) }}" id="delete-subcat-inc-{{ $child->id }}">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="button" 
-                                                            onclick="confirmAction('delete-subcat-inc-{{ $child->id }}', 'Eliminar Subcategoria?', 'Deseja eliminar \'{{ $child->name }}\'?', 'Sim, Eliminar')"
-                                                            title="Eliminar" 
-                                                            class="p-1 text-slate-500 hover:text-rose-400 rounded">
-                                                        <x-icon name="trash" class="w-3.5 h-3.5" />
-                                                    </button>
-                                                </form>
-                                            </div>
+                                @if ($cat->children && $cat->children->count() > 0)
+                                    <div class="mt-3 pt-2.5 border-t border-slate-700/50 space-y-1.5 bg-slate-950/40 p-2.5 rounded-lg">
+                                        <div class="flex items-center justify-between text-[10px] font-bold uppercase text-slate-400 mb-1">
+                                            <span>Subcategorias ({{ $cat->children->count() }})</span>
+                                            <form method="POST" action="{{ route('categories.destroy_children', $cat) }}" id="clear-children-inc-{{ $cat->id }}">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="button" 
+                                                        onclick="confirmAction('clear-children-inc-{{ $cat->id }}', 'Limpar Subcategorias?', 'Deseja desvincular todas as subcategorias de {{ $cat->name }}?', 'Sim, Limpar')"
+                                                        title="Limpar subcategorias" 
+                                                        class="text-[9px] text-amber-400 hover:text-amber-300">
+                                                    Desvincular todas
+                                                </button>
+                                            </form>
                                         </div>
-                                    @endforeach
-                                </div>
-                            @endif
+                                        <div class="space-y-1">
+                                            @foreach ($cat->children as $child)
+                                                <div class="flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 transition">
+                                                    <span class="text-slate-300 font-medium truncate max-w-[120px]">{{ $child->name }}</span>
+                                                    <div class="flex items-center space-x-1">
+                                                        <span class="text-[10px] text-slate-500 mr-1">{{ $child->transactions_count }} tr.</span>
+                                                        <form method="POST" action="{{ route('categories.unlink', $child) }}" id="unlink-subcat-inc-{{ $child->id }}">
+                                                            @csrf
+                                                            <button type="button" 
+                                                                    onclick="confirmAction('unlink-subcat-inc-{{ $child->id }}', 'Tirar da lista?', 'Deseja desvincular \'{{ $child->name }}\' desta categoria?', 'Sim, Tirar da lista')"
+                                                                    title="Tirar da lista (Desvincular)" 
+                                                                    class="p-1 text-slate-400 hover:text-amber-400 rounded">
+                                                                <x-icon name="close" class="w-3 h-3" />
+                                                            </button>
+                                                        </form>
+                                                        <a href="{{ route('categories.edit', $child) }}" title="Editar" class="p-1 text-slate-500 hover:text-emerald-400 rounded">
+                                                            <x-icon name="pencil" class="w-3 h-3" />
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                     @empty
-                        <p class="py-6 text-center text-slate-500 text-xs">Nenhuma categoria de receita cadastrada.</p>
+                        <div class="col-span-full py-6 text-center text-slate-500 text-xs">
+                            Nenhuma categoria de receita cadastrada.
+                        </div>
                     @endforelse
                 </div>
             </div>
         </div>
 
         <!-- Create Category Form (1 col) -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 h-fit shadow-sm">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 h-fit shadow-sm">
             <h3 class="text-base font-bold text-white mb-4">Nova Categoria</h3>
 
             <form method="POST" action="{{ route('categories.store') }}" class="space-y-4">
@@ -250,7 +233,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs py-3 px-4 rounded-xl transition shadow-lg shadow-emerald-500/20">
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs py-3 px-4 rounded-xl transition shadow-lg shadow-emerald-500/20 active:scale-95">
                     Cadastrar Categoria
                 </button>
             </form>
