@@ -55,3 +55,4 @@ No Android Studio, clique em **Build** > **Build Bundle(s) / APK(s)** > **Build 
 - **Safe Area Insets**: Compatibilidade total com entalhes/notches (`viewport-fit=cover`, `env(safe-area-inset-bottom)`).
 - **Gaveta Lateral Deslizante**: Menu completo off-canvas acessível no mobile com backdrop suave.
 - **Splash Screen Integrada**: Transição suave ao abrir o aplicativo.
+

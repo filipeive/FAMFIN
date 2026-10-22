@@ -45,6 +45,10 @@
         window.toggleMobileDrawer = function() {
             const drawer = document.getElementById('mobileDrawer');
             const overlay = document.getElementById('mobileOverlay');
+            const moreDropdown = document.getElementById('topbarMoreMenuDropdown');
+            if (moreDropdown && !moreDropdown.classList.contains('hidden')) {
+                moreDropdown.classList.add('hidden');
+            }
             if (!drawer || !overlay) return;
 
             const isOpen = !drawer.classList.contains('-translate-x-full');

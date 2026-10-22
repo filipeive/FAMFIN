@@ -33,3 +33,4 @@ echo "✅ APK gerado com sucesso!"
 echo "Localização: $(pwd)/FAMFIN-v1.0.apk"
 echo "Tamanho: $(ls -lh FAMFIN-v1.0.apk | awk '{print $5}')"
 echo "============================================="
+
