@@ -23,6 +23,7 @@ class WebControllersTest extends TestCase
     protected Family $family;
     protected Account $account;
     protected Category $category;
+    protected \App\Models\User $user;
 
     protected function setUp(): void
     {
@@ -34,6 +35,13 @@ class WebControllersTest extends TestCase
             'locale' => 'pt_MZ',
             'timezone' => 'Africa/Maputo',
         ]);
+
+        $this->user = \App\Models\User::factory()->create([
+            'family_id' => $this->family->id,
+            'name' => 'Filipe dos Santos',
+            'email' => 'filipe.test@famfin.app',
+        ]);
+        $this->actingAs($this->user);
 
         $this->account = Account::create([
             'family_id' => $this->family->id,

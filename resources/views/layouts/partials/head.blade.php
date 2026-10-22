@@ -7,6 +7,10 @@
     <meta name="theme-color" content="#020617">
     <title>{{ $title ?? 'FAMFIN' }} — Gestão Financeira Familiar</title>
 
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('icon.png') }}">
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- SweetAlert2 Dark Themed -->

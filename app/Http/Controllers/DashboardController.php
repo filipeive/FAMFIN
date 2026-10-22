@@ -29,12 +29,21 @@ class DashboardController extends Controller
 
     public function index(Request $request): View
     {
-        $family = auth()->user()?->family ?? Family::first() ?? Family::create([
-            'name' => 'Família Filipe dos Santos',
-            'currency' => 'MZN',
-            'locale' => 'pt_MZ',
-            'timezone' => 'Africa/Maputo',
-        ]);
+        $user = auth()->user();
+        $family = $user?->family;
+
+        if (!$family) {
+            $family = Family::first() ?? Family::create([
+                'name' => 'Família ' . ($user?->name ?? 'Filipe dos Santos'),
+                'currency' => 'MZN',
+                'locale' => 'pt_MZ',
+                'timezone' => 'Africa/Maputo',
+            ]);
+            if ($user && !$user->family_id) {
+                $user->family_id = $family->id;
+                $user->save();
+            }
+        }
 
         $currency = $family->currency ?? 'MZN';
 

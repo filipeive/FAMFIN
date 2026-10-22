@@ -39,6 +39,9 @@ class FullCrudTest extends TestCase
             'timezone' => 'Africa/Maputo',
         ]);
 
+        $user = \App\Models\User::factory()->create(['family_id' => $this->family->id]);
+        $this->actingAs($user);
+
         $this->account = Account::create([
             'family_id' => $this->family->id,
             'name' => 'Millennium BIM',

@@ -2,8 +2,13 @@
 <html lang="pt" class="h-full bg-slate-950 text-slate-100">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#020617">
     <title>Criar Conta — FAMFIN</title>
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('icon.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="h-full antialiased font-sans flex items-center justify-center p-4 bg-slate-950">
