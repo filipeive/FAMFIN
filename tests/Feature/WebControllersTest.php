@@ -107,6 +107,48 @@ class WebControllersTest extends TestCase
         $this->assertSoftDeleted('transactions', ['id' => $tx->id]);
     }
 
+    public function test_transaction_store_auto_categorizes_salary_and_creates_deductions(): void
+    {
+        // Seed Salary category
+        $salaryCategory = Category::create([
+            'family_id' => $this->family->id,
+            'name' => 'Salário',
+            'type' => 'income',
+        ]);
+
+        $response = $this->post(route('transactions.store'), [
+            'account_id' => $this->account->id,
+            'type' => 'income',
+            'amount' => '80.000,00',
+            'description' => 'Salário Life Child Setembro',
+            'transaction_date' => now()->toDateString(),
+            'deduct_tithe' => '1',
+            'deduct_inss' => '1',
+        ]);
+
+        $response->assertRedirect(route('transactions.index'));
+
+        // Verify parent income was auto-categorized to Salário
+        $income = Transaction::where('description', 'Salário Life Child Setembro')->first();
+        $this->assertNotNull($income);
+        $this->assertEquals($salaryCategory->id, $income->category_id);
+        $this->assertEquals(8000000, $income->amount); // 80.000,00 MZN
+
+        // Verify INSS child (3% = 2.400,00 MZN = 240000 centavos)
+        $this->assertDatabaseHas('transactions', [
+            'parent_transaction_id' => $income->id,
+            'amount' => 240000,
+            'type' => 'expense',
+        ]);
+
+        // Verify Tithe child (10% = 8.000,00 MZN = 800000 centavos)
+        $this->assertDatabaseHas('transactions', [
+            'parent_transaction_id' => $income->id,
+            'amount' => 800000,
+            'type' => 'expense',
+        ]);
+    }
+
     public function test_budgets_controller_index_and_store(): void
     {
         $response = $this->get(route('budgets.index', ['month' => '2026-09']));

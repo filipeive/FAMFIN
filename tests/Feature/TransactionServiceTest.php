@@ -174,4 +174,69 @@ class TransactionServiceTest extends TestCase
         $this->assertEquals(1000000, $this->checkingAccount->balance);
         $this->assertSoftDeleted('transactions', ['id' => $transaction->id]);
     }
+
+    public function test_create_income_with_tithe_deduction(): void
+    {
+        $result = $this->transactionService->createIncomeWithDeductions([
+            'account_id' => $this->checkingAccount->id,
+            'user_id' => $this->user->id,
+            'amount' => 5000000, // 50.000,00 MZN
+            'description' => 'Trabalho Extra Freelance',
+            'transaction_date' => now()->toDateString(),
+        ], deductTithe: true, deductInss: false);
+
+        $this->assertArrayHasKey('income', $result);
+        $this->assertArrayHasKey('deductions', $result);
+        $this->assertCount(1, $result['deductions']);
+
+        $income = $result['income'];
+        $tithe = $result['deductions'][0];
+
+        $this->assertEquals(5000000, $income->amount);
+        $this->assertEquals(500000, $tithe->amount); // 10% de 50.000,00 = 5.000,00 MZN
+        $this->assertEquals($income->id, $tithe->parent_transaction_id);
+        $this->assertEquals(TransactionType::Expense, $tithe->type);
+
+        $this->checkingAccount->refresh();
+        // Initial: 10.000,00 + 50.000,00 (income) - 5.000,00 (tithe) = 55.000,00 MZN (5500000 centavos)
+        $this->assertEquals(5500000, $this->checkingAccount->balance);
+    }
+
+    public function test_create_income_with_life_child_deductions_tithe_and_inss(): void
+    {
+        $result = $this->transactionService->createIncomeWithDeductions([
+            'account_id' => $this->checkingAccount->id,
+            'user_id' => $this->user->id,
+            'amount' => 10000000, // 100.000,00 MZN
+            'description' => 'Salário Life Child',
+            'transaction_date' => now()->toDateString(),
+        ], deductTithe: true, deductInss: true);
+
+        $this->assertCount(2, $result['deductions']);
+
+        $income = $result['income'];
+        $inss = collect($result['deductions'])->first(fn($t) => str_contains($t->description, 'INSS'));
+        $tithe = collect($result['deductions'])->first(fn($t) => str_contains($t->description, 'Dízimo'));
+
+        $this->assertNotNull($inss);
+        $this->assertNotNull($tithe);
+
+        // INSS 3% = 300.000 centavos (3.000,00 MZN)
+        $this->assertEquals(300000, $inss->amount);
+        // Tithe 10% = 1.000.000 centavos (10.000,00 MZN)
+        $this->assertEquals(1000000, $tithe->amount);
+
+        $this->checkingAccount->refresh();
+        // Initial 10.000,00 + 100.000,00 - 3.000,00 - 10.000,00 = 97.000,00 MZN (9.700.000 centavos)
+        $this->assertEquals(9700000, $this->checkingAccount->balance);
+
+        // Test cascade deletion: deleting parent income reverts both deductions and restores balance
+        $this->transactionService->deleteTransaction($income);
+
+        $this->checkingAccount->refresh();
+        $this->assertEquals(1000000, $this->checkingAccount->balance); // Back to initial 10.000,00 MZN
+        $this->assertSoftDeleted('transactions', ['id' => $income->id]);
+        $this->assertSoftDeleted('transactions', ['id' => $inss->id]);
+        $this->assertSoftDeleted('transactions', ['id' => $tithe->id]);
+    }
 }

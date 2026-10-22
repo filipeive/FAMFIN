@@ -2,9 +2,12 @@
 
 namespace App\Services;
 
+use App\Enums\CategoryType;
+use App\Enums\FinancialRuleType;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Account;
+use App\Models\Category;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -105,6 +108,7 @@ class TransactionService
 
     /**
      * Delete a transaction and revert its balance effect.
+     * Also cascades to child deduction transactions if any.
      *
      * @param Transaction $transaction
      * @return bool
@@ -112,6 +116,11 @@ class TransactionService
     public function deleteTransaction(Transaction $transaction): bool
     {
         return DB::transaction(function () use ($transaction) {
+            foreach ($transaction->childTransactions as $child) {
+                $this->revertBalanceEffect($child);
+                $child->delete();
+            }
+
             $this->revertBalanceEffect($transaction);
             return $transaction->delete();
         });
@@ -129,12 +138,164 @@ class TransactionService
             $transactions = Transaction::whereIn('id', $transactionIds)->get();
             $count = 0;
             foreach ($transactions as $transaction) {
+                foreach ($transaction->childTransactions as $child) {
+                    $this->revertBalanceEffect($child);
+                    $child->delete();
+                }
                 $this->revertBalanceEffect($transaction);
                 if ($transaction->delete()) {
                     $count++;
                 }
             }
             return $count;
+        });
+    }
+
+    /**
+     * Create an income transaction with optional automatic deductions (Dízimo and/or INSS).
+     *
+     * @param array $incomeData
+     * @param bool $deductTithe
+     * @param bool $deductInss
+     * @return array ['income' => Transaction, 'deductions' => Transaction[], 'net_amount' => int]
+     * @throws InvalidArgumentException
+     */
+    public function createIncomeWithDeductions(
+        array $incomeData,
+        bool $deductTithe = false,
+        bool $deductInss = false
+    ): array {
+        $amount = (int) ($incomeData['amount'] ?? 0);
+        if ($amount <= 0) {
+            throw new InvalidArgumentException('Income amount must be greater than zero centavos.');
+        }
+
+        $incomeData['type'] = TransactionType::Income;
+
+        return DB::transaction(function () use ($incomeData, $amount, $deductTithe, $deductInss) {
+            $incomeTransaction = $this->createTransaction($incomeData);
+            $account = Account::findOrFail($incomeData['account_id']);
+            $family = $account->family;
+            $deductions = [];
+
+            $inssAmount = 0;
+
+            // 1. Process INSS (default 3% or active rule)
+            if ($deductInss) {
+                $inssRule = $family?->financialRules()
+                    ->where('type', FinancialRuleType::Inss)
+                    ->where('is_active', true)
+                    ->first();
+
+                $inssRate = $inssRule ? (float) $inssRule->percentage : 3.00;
+                $inssAmount = (int) floor($amount * ($inssRate / 100));
+
+                if ($inssAmount > 0) {
+                    $inssCategory = Category::where('family_id', $account->family_id)
+                        ->where('type', CategoryType::Expense)
+                        ->where(function ($q) {
+                            $q->where('name', 'like', '%INSS%')
+                              ->orWhere('name', 'like', '%inss%');
+                        })->first();
+
+                    if (!$inssCategory) {
+                        $inssCategory = Category::create([
+                            'family_id' => $account->family_id,
+                            'name' => 'INSS & Encargos Sociais',
+                            'type' => CategoryType::Expense,
+                            'icon' => '⚖️',
+                            'color' => '#64748B',
+                            'is_system' => true,
+                        ]);
+                    }
+
+                    $dateString = is_string($incomeTransaction->transaction_date)
+                        ? $incomeTransaction->transaction_date
+                        : $incomeTransaction->transaction_date->toDateString();
+
+                    $inssTransaction = $this->createTransaction([
+                        'account_id' => $account->id,
+                        'category_id' => $inssCategory->id,
+                        'user_id' => $incomeData['user_id'] ?? null,
+                        'type' => TransactionType::Expense,
+                        'status' => $incomeTransaction->status,
+                        'amount' => $inssAmount,
+                        'description' => "INSS ({$inssRate}%) — " . $incomeTransaction->description,
+                        'notes' => "Dedução automática legal de INSS ({$inssRate}%).",
+                        'transaction_date' => $dateString,
+                        'parent_transaction_id' => $incomeTransaction->id,
+                    ]);
+
+                    $deductions[] = $inssTransaction;
+                }
+            }
+
+            // 2. Process Tithe / Dízimo (default 10% or active rule)
+            if ($deductTithe) {
+                $titheRule = $family?->financialRules()
+                    ->where('type', FinancialRuleType::Tithe)
+                    ->where('is_active', true)
+                    ->first();
+
+                $titheRate = $titheRule ? (float) $titheRule->percentage : 10.00;
+                $baseConfig = $titheRule?->config['base'] ?? 'gross';
+                $titheBase = ($baseConfig === 'net_after_inss' && $inssAmount > 0)
+                    ? ($amount - $inssAmount)
+                    : $amount;
+
+                $titheAmount = (int) floor($titheBase * ($titheRate / 100));
+
+                if ($titheAmount > 0) {
+                    $titheCategory = Category::where('family_id', $account->family_id)
+                        ->where('type', CategoryType::Expense)
+                        ->where(function ($q) {
+                            $q->where('name', 'like', '%Dízimo%')
+                              ->orWhere('name', 'like', '%dizimo%')
+                              ->orWhere('name', 'like', '%Dízimos%')
+                              ->orWhere('name', 'like', '%dízimos%')
+                              ->orWhere('name', 'like', '%Igreja%');
+                        })->first();
+
+                    if (!$titheCategory) {
+                        $titheCategory = Category::create([
+                            'family_id' => $account->family_id,
+                            'name' => 'Dízimos & Contribuições',
+                            'type' => CategoryType::Expense,
+                            'icon' => '⛪',
+                            'color' => '#8B5CF6',
+                            'is_system' => true,
+                        ]);
+                    }
+
+                    $dateString = is_string($incomeTransaction->transaction_date)
+                        ? $incomeTransaction->transaction_date
+                        : $incomeTransaction->transaction_date->toDateString();
+
+                    $titheTransaction = $this->createTransaction([
+                        'account_id' => $account->id,
+                        'category_id' => $titheCategory->id,
+                        'user_id' => $incomeData['user_id'] ?? null,
+                        'type' => TransactionType::Expense,
+                        'status' => $incomeTransaction->status,
+                        'amount' => $titheAmount,
+                        'description' => "Dízimo ({$titheRate}%) — " . $incomeTransaction->description,
+                        'notes' => "Dedução automática de Dízimo ({$titheRate}%).",
+                        'transaction_date' => $dateString,
+                        'parent_transaction_id' => $incomeTransaction->id,
+                    ]);
+
+                    $deductions[] = $titheTransaction;
+                }
+            }
+
+            $totalDeductions = array_sum(array_map(fn($d) => $d->amount, $deductions));
+
+            return [
+                'income' => $incomeTransaction,
+                'deductions' => $deductions,
+                'total_deductions' => $totalDeductions,
+                'net_amount' => $amount - $totalDeductions,
+            ];
         });
     }
 

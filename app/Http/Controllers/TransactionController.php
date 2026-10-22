@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\CategoryType;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use App\Models\Account;
@@ -120,9 +121,51 @@ class TransactionController extends Controller
             'transfer_account_id' => 'nullable|required_if:type,transfer|exists:accounts,id',
             'transaction_date' => 'required|date',
             'notes' => 'nullable|string|max:1000',
+            'deduct_tithe' => 'nullable|boolean',
+            'deduct_inss' => 'nullable|boolean',
         ]);
 
         $amountInCentavos = parseMoney($validated['amount']);
+
+        // Auto-categorize Salary if not explicitly chosen
+        if ($validated['type'] === 'income' && empty($validated['category_id'])) {
+            $descLower = mb_strtolower($validated['description']);
+            if (str_contains($descLower, 'salario') || str_contains($descLower, 'salário') || str_contains($descLower, 'life child') || str_contains($descLower, 'lifechild')) {
+                $account = Account::find($validated['account_id']);
+                $familyId = $account?->family_id;
+                $salaryCategory = Category::where('family_id', $familyId)
+                    ->where('type', CategoryType::Income)
+                    ->where(function ($q) {
+                        $q->where('name', 'like', '%Salário%')
+                          ->orWhere('name', 'like', '%salario%');
+                    })
+                    ->first();
+                if ($salaryCategory) {
+                    $validated['category_id'] = $salaryCategory->id;
+                }
+            }
+        }
+
+        $deductTithe = $request->boolean('deduct_tithe');
+        $deductInss = $request->boolean('deduct_inss');
+
+        if ($validated['type'] === 'income' && ($deductTithe || $deductInss)) {
+            $result = $this->transactionService->createIncomeWithDeductions([
+                'account_id' => $validated['account_id'],
+                'amount' => $amountInCentavos,
+                'description' => $validated['description'],
+                'category_id' => $validated['category_id'] ?? null,
+                'transaction_date' => $validated['transaction_date'],
+                'notes' => $validated['notes'] ?? null,
+                'status' => TransactionStatus::Completed,
+            ], $deductTithe, $deductInss);
+
+            $deductions = $result['deductions'];
+            $deductionNames = array_map(fn($d) => $d->description, $deductions);
+            $msg = 'Receita registada com sucesso! Deduções automáticas aplicadas: ' . implode(', ', $deductionNames) . '.';
+
+            return redirect()->route('transactions.index')->with('success', $msg);
+        }
 
         $this->transactionService->createTransaction([
             'account_id' => $validated['account_id'],

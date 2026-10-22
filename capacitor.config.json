@@ -1,0 +1,29 @@
+{
+  "appId": "com.famfin.app",
+  "appName": "FAMFIN",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "http://146.235.224.99/famfin/",
+    "cleartext": true,
+    "allowNavigation": [
+      "*"
+    ]
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2500,
+      "launchAutoHide": true,
+      "backgroundColor": "#020617",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": true,
+      "androidSpinnerStyle": "small",
+      "spinnerColor": "#10b981"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#020617"
+    }
+  }
+}
