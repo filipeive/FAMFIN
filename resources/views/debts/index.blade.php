@@ -235,9 +235,10 @@
     </div>
 
     <script>
+        const debtPaymentRouteTemplate = "{{ route('debts.payment', ':id') }}";
         function openPaymentModal(debtId, debtName) {
             document.getElementById('paymentDebtName').innerText = 'Dívida: ' + debtName;
-            document.getElementById('paymentForm').action = '/debts/' + debtId + '/payment';
+            document.getElementById('paymentForm').action = debtPaymentRouteTemplate.replace(':id', debtId);
             document.getElementById('paymentModal').classList.remove('hidden');
         }
     </script>

@@ -68,14 +68,14 @@ class DashboardController extends Controller
         // Net worth
         $netWorth = $this->balanceService->getFamilyNetWorth($family);
 
-        // Monthly Totals
-        $monthlyIncome = (int) Transaction::whereHas('account', fn ($q) => $q->where('family_id', $family->id))
+        // Monthly Totals (only including general accounts to avoid double-counting sub-account envelope movements)
+        $monthlyIncome = (int) Transaction::whereHas('account', fn ($q) => $q->where('family_id', $family->id)->where('include_in_total', true))
             ->where('type', TransactionType::Income)
             ->where('status', TransactionStatus::Completed)
             ->forMonth($currentMonth)
             ->sum('amount');
 
-        $monthlyExpense = (int) Transaction::whereHas('account', fn ($q) => $q->where('family_id', $family->id))
+        $monthlyExpense = (int) Transaction::whereHas('account', fn ($q) => $q->where('family_id', $family->id)->where('include_in_total', true))
             ->where('type', TransactionType::Expense)
             ->where('status', TransactionStatus::Completed)
             ->forMonth($currentMonth)

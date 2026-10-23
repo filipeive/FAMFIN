@@ -10,6 +10,7 @@ enum AccountType: string
     case Wallet = 'wallet';
     case CreditCard = 'credit_card';
     case MobileMoney = 'mobile_money';
+    case SubAccount = 'sub_account';
 
     public function label(): string
     {
@@ -20,6 +21,7 @@ enum AccountType: string
             self::Wallet => 'Carteira',
             self::CreditCard => 'Cartão de Crédito',
             self::MobileMoney => 'Mobile Money (M-Pesa/e-Mola)',
+            self::SubAccount => 'Subconta / Mesada',
         };
     }
 }

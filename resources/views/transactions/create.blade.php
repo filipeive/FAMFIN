@@ -12,19 +12,19 @@
                 <label class="block text-xs font-semibold text-slate-400 mb-2">Tipo de Transação</label>
                 <div class="grid grid-cols-3 gap-2 sm:gap-3">
                     <label class="flex items-center justify-center p-3 rounded-xl border border-slate-700 bg-slate-800/60 cursor-pointer hover:border-emerald-500 transition has-[:checked]:border-teal-500 has-[:checked]:bg-teal-500/10 has-[:checked]:text-teal-400">
-                        <input type="radio" name="type" value="income" class="sr-only" checked onchange="handleTypeChange()">
+                        <input type="radio" name="type" value="income" class="sr-only" {{ request('type', 'income') === 'income' ? 'checked' : '' }} onchange="handleTypeChange()">
                         <x-icon name="income" class="w-4 h-4 mr-1.5 sm:mr-2" />
                         <span class="text-xs font-bold">Receita</span>
                     </label>
 
                     <label class="flex items-center justify-center p-3 rounded-xl border border-slate-700 bg-slate-800/60 cursor-pointer hover:border-emerald-500 transition has-[:checked]:border-rose-500 has-[:checked]:bg-rose-500/10 has-[:checked]:text-rose-400">
-                        <input type="radio" name="type" value="expense" class="sr-only" onchange="handleTypeChange()">
+                        <input type="radio" name="type" value="expense" class="sr-only" {{ request('type') === 'expense' ? 'checked' : '' }} onchange="handleTypeChange()">
                         <x-icon name="expense" class="w-4 h-4 mr-1.5 sm:mr-2" />
                         <span class="text-xs font-bold">Despesa</span>
                     </label>
 
                     <label class="flex items-center justify-center p-3 rounded-xl border border-slate-700 bg-slate-800/60 cursor-pointer hover:border-emerald-500 transition has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-500/10 has-[:checked]:text-indigo-400">
-                        <input type="radio" name="type" value="transfer" class="sr-only" onchange="handleTypeChange()">
+                        <input type="radio" name="type" value="transfer" class="sr-only" {{ request('type') === 'transfer' ? 'checked' : '' }} onchange="handleTypeChange()">
                         <x-icon name="transfer" class="w-4 h-4 mr-1.5 sm:mr-2" />
                         <span class="text-xs font-bold">Transferência</span>
                     </label>
@@ -62,9 +62,22 @@
                     <label class="block text-xs font-semibold text-slate-400 mb-1.5" id="sourceAccountLabel">Conta / Origem</label>
                     <select name="account_id" id="accountSelect" required class="w-full bg-slate-800 border border-slate-700 text-slate-100 text-sm rounded-xl px-4 py-3 focus:ring-emerald-500 focus:border-emerald-500">
                         <option value="">Selecione a conta...</option>
-                        @foreach ($accounts as $acc)
-                            <option value="{{ $acc->id }}">{{ $acc->name }} ({{ formatMoney($acc->balance, 'MZN') }})</option>
-                        @endforeach
+                        <optgroup label="🏦 Contas Principais">
+                            @foreach ($accounts->where('is_allowance', false) as $acc)
+                                <option value="{{ $acc->id }}" {{ request('account_id') == $acc->id ? 'selected' : '' }}>
+                                    {{ $acc->name }} ({{ formatMoney($acc->balance, 'MZN') }})
+                                </option>
+                            @endforeach
+                        </optgroup>
+                        @if ($accounts->where('is_allowance', true)->count() > 0)
+                            <optgroup label="👧 Subcontas / Mesadas das Filhas (Ayume & Eunice)">
+                                @foreach ($accounts->where('is_allowance', true) as $acc)
+                                    <option value="{{ $acc->id }}" {{ request('account_id') == $acc->id ? 'selected' : '' }}>
+                                        {{ $acc->name }} &bull; Saldo: {{ formatMoney($acc->balance, 'MZN') }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                        @endif
                     </select>
                 </div>
 

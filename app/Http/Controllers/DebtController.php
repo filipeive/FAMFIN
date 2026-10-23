@@ -145,12 +145,16 @@ class DebtController extends Controller
         ]);
 
         $amountInCentavos = parseMoney($validated['amount']);
+        if ($amountInCentavos <= 0) {
+            return back()->with('error', 'O valor da amortização deve ser superior a zero.');
+        }
+
         $account = !empty($validated['account_id']) ? Account::find($validated['account_id']) : null;
 
         $this->debtService->recordPayment(
             $debt,
             $amountInCentavos,
-            null,
+            auth()->id(),
             $validated['payment_date'] ?? now()->toDateString(),
             $validated['note'] ?? null,
             $account

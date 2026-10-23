@@ -299,4 +299,57 @@ class WebControllersTest extends TestCase
         $rule->refresh();
         $this->assertFalse($rule->is_active);
     }
+
+    public function test_subaccounts_and_allowance_allocation(): void
+    {
+        // Visiting accounts should auto-initialize Ayume and Eunice sub-accounts
+        $response = $this->get(route('accounts.index'));
+        $response->assertStatus(200);
+        $response->assertSee('Subcontas de Mesadas — Filhas', false);
+        $response->assertSee('Ayume', false);
+        $response->assertSee('Eunice', false);
+
+        $ayumeAccount = Account::where('assigned_to_name', 'Ayume')->first();
+        $this->assertNotNull($ayumeAccount);
+        $this->assertTrue($ayumeAccount->is_allowance);
+        $this->assertEquals(0, $ayumeAccount->balance);
+
+        // Allocate 5.000 MT allowance from parent account
+        $allocateResponse = $this->post(route('accounts.allocate_allowance', $ayumeAccount), [
+            'source_account_id' => $this->account->id,
+            'amount' => '5.000,00',
+            'allocation_date' => now()->toDateString(),
+            'notes' => 'Mesada mensal da Ayume',
+        ]);
+
+        $allocateResponse->assertRedirect(route('accounts.index'));
+        $ayumeAccount->refresh();
+        $this->account->refresh();
+
+        // Subaccount should now have 5.000 MT (500000 centavos)
+        $this->assertEquals(500000, $ayumeAccount->balance);
+
+        // Expense should have been created on parent account
+        $this->assertDatabaseHas('transactions', [
+            'account_id' => $this->account->id,
+            'type' => 'expense',
+            'amount' => 500000,
+            'description' => 'Mesada - Ayume',
+        ]);
+
+        // Spend from Ayume's subaccount (e.g. 1.200 MT on clothes)
+        $spendResponse = $this->post(route('transactions.store'), [
+            'account_id' => $ayumeAccount->id,
+            'type' => 'expense',
+            'amount' => '1.200,00',
+            'description' => 'Vestuário para a Ayume',
+            'transaction_date' => now()->toDateString(),
+        ]);
+
+        $spendResponse->assertRedirect(route('transactions.index'));
+        $ayumeAccount->refresh();
+
+        // 5.000 - 1.200 = 3.800 MT (380000 centavos)
+        $this->assertEquals(380000, $ayumeAccount->balance);
+    }
 }

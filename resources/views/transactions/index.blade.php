@@ -92,9 +92,18 @@
                     <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Conta</label>
                     <select name="account_id" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-xl px-2.5 py-2 focus:ring-emerald-500 focus:border-emerald-500">
                         <option value="">Todas as contas</option>
-                        @foreach ($accounts as $acc)
-                            <option value="{{ $acc->id }}" {{ ($filters['account_id'] ?? '') == $acc->id ? 'selected' : '' }}>{{ $acc->name }}</option>
-                        @endforeach
+                        <optgroup label="Contas Principais">
+                            @foreach ($accounts->where('is_allowance', false) as $acc)
+                                <option value="{{ $acc->id }}" {{ ($filters['account_id'] ?? '') == $acc->id ? 'selected' : '' }}>{{ $acc->name }}</option>
+                            @endforeach
+                        </optgroup>
+                        @if ($accounts->where('is_allowance', true)->count() > 0)
+                            <optgroup label="👧 Subcontas de Mesadas">
+                                @foreach ($accounts->where('is_allowance', true) as $acc)
+                                    <option value="{{ $acc->id }}" {{ ($filters['account_id'] ?? '') == $acc->id ? 'selected' : '' }}>{{ $acc->name }}</option>
+                                @endforeach
+                            </optgroup>
+                        @endif
                     </select>
                 </div>
 

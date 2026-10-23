@@ -160,9 +160,10 @@
     </div>
 
     <script>
+        const savingsContributeRouteTemplate = "{{ route('savings.contribute', ':id') }}";
         function openContributeModal(goalId, goalName) {
             document.getElementById('contributeGoalName').innerText = 'Meta: ' + goalName;
-            document.getElementById('contributeForm').action = '/savings/' + goalId + '/contribute';
+            document.getElementById('contributeForm').action = savingsContributeRouteTemplate.replace(':id', goalId);
             document.getElementById('contributeModal').classList.remove('hidden');
         }
     </script>

@@ -56,6 +56,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/{account}', [AccountController::class, 'update'])->name('update');
         Route::delete('/{account}', [AccountController::class, 'destroy'])->name('destroy');
         Route::post('/recalculate', [AccountController::class, 'recalculate'])->name('recalculate');
+        Route::post('/{account}/allowance', [AccountController::class, 'allocateAllowance'])->name('allocate_allowance');
     });
 
     // Categories CRUD & Subcategories Mass Delete

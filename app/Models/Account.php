@@ -15,6 +15,7 @@ class Account extends Model
 
     protected $fillable = [
         'family_id',
+        'parent_id',
         'name',
         'type',
         'balance',
@@ -24,6 +25,9 @@ class Account extends Model
         'icon',
         'is_active',
         'include_in_total',
+        'is_allowance',
+        'assigned_to_name',
+        'allowance_monthly_amount',
     ];
 
     protected $casts = [
@@ -32,6 +36,8 @@ class Account extends Model
         'initial_balance' => 'integer',
         'is_active' => 'boolean',
         'include_in_total' => 'boolean',
+        'is_allowance' => 'boolean',
+        'allowance_monthly_amount' => 'integer',
     ];
 
     // ── Relationships ──────────────────────────────
@@ -41,9 +47,31 @@ class Account extends Model
         return $this->belongsTo(Family::class);
     }
 
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'parent_id');
+    }
+
+    public function subAccounts(): HasMany
+    {
+        return $this->hasMany(Account::class, 'parent_id');
+    }
+
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    // ── Scopes ─────────────────────────────────────
+
+    public function scopeMainAccounts($query)
+    {
+        return $query->whereNull('parent_id');
+    }
+
+    public function scopeAllowances($query)
+    {
+        return $query->where('is_allowance', true);
     }
 
     // ── Accessors ──────────────────────────────────

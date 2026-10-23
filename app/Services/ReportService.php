@@ -39,13 +39,13 @@ class ReportService
         $maxVal = 1;
 
         foreach ($months as $month) {
-            $incomes = (int) Transaction::whereHas('account', fn ($q) => $q->where('family_id', $family->id))
+            $incomes = (int) Transaction::whereHas('account', fn ($q) => $q->where('family_id', $family->id)->where('include_in_total', true))
                 ->where('type', TransactionType::Income)
                 ->where('status', TransactionStatus::Completed)
                 ->forMonth($month)
                 ->sum('amount');
 
-            $expenses = (int) Transaction::whereHas('account', fn ($q) => $q->where('family_id', $family->id))
+            $expenses = (int) Transaction::whereHas('account', fn ($q) => $q->where('family_id', $family->id)->where('include_in_total', true))
                 ->where('type', TransactionType::Expense)
                 ->where('status', TransactionStatus::Completed)
                 ->forMonth($month)
@@ -87,7 +87,7 @@ class ReportService
     public function getCategoryExpenseBreakdown(Family $family, ?string $month = null): array
     {
         $query = Transaction::with('category')
-            ->whereHas('account', fn ($q) => $q->where('family_id', $family->id))
+            ->whereHas('account', fn ($q) => $q->where('family_id', $family->id)->where('include_in_total', true))
             ->where('type', TransactionType::Expense)
             ->where('status', TransactionStatus::Completed);
 

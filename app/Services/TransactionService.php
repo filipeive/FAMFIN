@@ -320,6 +320,86 @@ class TransactionService
     }
 
     /**
+     * Allocate a monthly allowance to a sub-account / child envelope.
+     * Debits the source account as an Expense (Category: Mesadas).
+     * Credits the sub-account as an Income.
+     * Atomically links both transactions.
+     *
+     * @param Account $subAccount
+     * @param Account $sourceAccount
+     * @param int $amount Amount in centavos
+     * @param string $date
+     * @param string|null $note
+     * @param int|null $userId
+     * @return array{expense: Transaction, income: Transaction}
+     */
+    public function allocateAllowance(
+        Account $subAccount,
+        Account $sourceAccount,
+        int $amount,
+        string $date,
+        ?string $note = null,
+        ?int $userId = null
+    ): array {
+        if ($amount <= 0) {
+            throw new InvalidArgumentException('Allowance amount must be greater than zero centavos.');
+        }
+
+        $mesadaCategory = Category::where('family_id', $sourceAccount->family_id)
+            ->where('type', CategoryType::Expense)
+            ->where(function ($q) {
+                $q->where('name', 'like', '%Mesada%')
+                  ->orWhere('name', 'like', '%mesada%')
+                  ->orWhere('name', 'like', '%Filhos%')
+                  ->orWhere('name', 'like', '%Dependentes%');
+            })->first();
+
+        if (!$mesadaCategory) {
+            $mesadaCategory = Category::create([
+                'family_id' => $sourceAccount->family_id,
+                'name' => 'Mesadas & Dependentes',
+                'type' => CategoryType::Expense,
+                'icon' => '👧',
+                'color' => '#C084FC',
+            ]);
+        }
+
+        return DB::transaction(function () use ($subAccount, $sourceAccount, $amount, $date, $note, $userId, $mesadaCategory) {
+            $person = $subAccount->assigned_to_name ?? $subAccount->name;
+
+            // 1. Expense transaction on source/main account
+            $expenseTx = $this->createTransaction([
+                'account_id' => $sourceAccount->id,
+                'category_id' => $mesadaCategory?->id,
+                'user_id' => $userId,
+                'type' => TransactionType::Expense,
+                'amount' => $amount,
+                'description' => "Mesada - {$person}",
+                'notes' => $note ?? "Atribuição mensal de mesada para {$person}",
+                'transaction_date' => $date,
+            ]);
+
+            // 2. Income/Credit transaction on the sub-account
+            $incomeTx = $this->createTransaction([
+                'account_id' => $subAccount->id,
+                'category_id' => null,
+                'user_id' => $userId,
+                'type' => TransactionType::Income,
+                'amount' => $amount,
+                'description' => "Aporte de Mesada Mensal",
+                'notes' => $note ?? "Crédito de mesada financiado por {$sourceAccount->name}",
+                'transaction_date' => $date,
+                'parent_transaction_id' => $expenseTx->id,
+            ]);
+
+            return [
+                'expense' => $expenseTx,
+                'income' => $incomeTx,
+            ];
+        });
+    }
+
+    /**
      * Revert balance effect for a completed transaction.
      */
     protected function revertBalanceEffect(Transaction $transaction): void
